@@ -4,10 +4,41 @@ name := "hello-world"
 
 version := "0.1"
 
-// Want to use a published library in your project?
-// You can define other libraries as dependencies in your build like this:
+// FS2 parce que c'est beaucoup plus expliqué au niveau de la doc cf (notre exposé sur les streams)
+val fs2Version = "3.9.2"
 
-libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.3.0"
+// Je fais un test, dont mind me
+// https://http4s.org/
+// Askip c'est good avec fs2 cf premiere page
+val http4sVersion = "0.23.26"
+
+// ??????????
+val catsEffectVersion = "3.5.2"
+
+libraryDependencies ++= Seq(
+
+
+    // module de base de scala
+    "org.scala-lang.modules" %% "scala-parser-combinators" % "2.3.0",
+
+    // j'ai pas fait le tri, j'ai tout pris
+    "org.http4s" %% "http4s-ember-client" % http4sVersion,
+    "org.http4s" %% "http4s-ember-server" % http4sVersion,
+    "org.http4s" %% "http4s-dsl" % http4sVersion,
+    "org.http4s" %% "http4s-core" % http4sVersion,
+    "org.http4s" %% "http4s-client" % http4sVersion,
+    "org.http4s" %% "http4s-server" % http4sVersion,
+    // aucune idée le tuto recommande ça aussi 
+    "org.typelevel" %% "cats-effect" % catsEffectVersion,
+
+
+    // https://http4s.org/v1/docs/json.html
+    // ça sera surement utile
+    "org.http4s" %% "http4s-circe" % http4sVersion,
+
+    "co.fs2" %% "fs2-core" % fs2Version
+)
+
 
 // Here, `libraryDependencies` is a set of dependencies, and by using `+=`,
 // we're adding the scala-parser-combinators dependency to the set of dependencies

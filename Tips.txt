@@ -1,0 +1,9 @@
+Je laisse la doc/tuto au dessus pour qu'on comprenne
+Faites pareil sinon on va jamais rien comprendre au code
+
+
+Pour le moment les commandes utiles
+- pour lancer le projet
+sbt run 
+- pour tester, depuis un autre terminal 
+curl http://localhost:8080/admin/ping
