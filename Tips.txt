@@ -7,3 +7,4 @@ Pour le moment les commandes utiles
 sbt run 
 - pour tester, depuis un autre terminal 
 curl http://localhost:8080/admin/ping
+vous comprenez le paterne

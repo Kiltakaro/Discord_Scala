@@ -15,8 +15,16 @@ val http4sVersion = "0.23.26"
 // ??????????
 val catsEffectVersion = "3.5.2"
 
+
+// Je rajoute un max de dependances que je trouve dans les tutos puis on fera le tri après
 libraryDependencies ++= Seq(
 
+    "org.http4s" %% "http4s-circe" % "0.23.27",
+    "io.circe" %% "circe-generic" % "0.14.6",  
+    "io.circe" %% "circe-parser" % "0.14.6",
+
+    // pour logger 
+    "org.slf4j" % "slf4j-simple" % "2.0.9",
 
     // module de base de scala
     "org.scala-lang.modules" %% "scala-parser-combinators" % "2.3.0",

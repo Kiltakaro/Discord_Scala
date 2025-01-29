@@ -3,8 +3,8 @@ import cats.effect._
 import com.comcast.ip4s._
 
 
-// import io.circe.generic.auto._
-// import io.circe.syntax._
+import io.circe.generic.auto._
+import io.circe.syntax._
 
 import org.http4s._
 import org.http4s.circe._
@@ -15,20 +15,31 @@ import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import org.http4s.ember.server.EmberServerBuilder
 
+// model reponse pour json
+case class AdminStatus(status: String)
+case class User(id: Int, name: String, isAdmin: Boolean)
 
-// de ce que j'ai compris
-// On peut exetends IOApp.Simple plutot que IOApp mais faudra remplacer run par 
-//  def run: IO[Unit] = EmberServerBuilder
-// et on aura plus besoin du
-// ".as(ExitCode.Success)"
-// mais je comprends pas pourquoi le serv s'arrete avec ça :/ 
-object Admin extends IOApp {
+
+// Je comprends pas trop comment designer 
+// pour le moment je l'ai nommé admin mais c'est un peu le bordel en fait
+// je vois pas comment gerer l'admin psk le USER peut etre plusieur fois admin ou non etc aled
+object Admin {
+
+    val users = List(
+        User(1, "Tanny", true),
+        User(2, "Secours", false)
+    )
 
     // Définir des routes
     // https://http4s.org/v1/docs/middleware.html#composing-services-with-middleware
     val adminRoutes = HttpRoutes.of[IO] {
         case GET -> Root / "admin" / "ping" =>
-            Ok("Admin is up!")
+            Ok(AdminStatus("Admin route works!").asJson)
+
+        case GET -> Root / "admin" / "users" =>
+            Ok(users.asJson)
+
+        // TOUJOURS LAISSER A LA FIN
         case _ =>
             NotFound("Admin Error")
     }
@@ -37,13 +48,4 @@ object Admin extends IOApp {
     // app avec nos routes 
     val httpApp = adminRoutes.orNotFound
 
-    // https://http4s.org/v1/docs/client.html#setup
-    def run(args: List[String]): IO[ExitCode] = EmberServerBuilder
-        .default[IO]
-        .withHost(ipv4"0.0.0.0")
-        .withPort(port"8080")
-        .withHttpApp(httpApp) // donner les routes au serveur
-        .build
-        .use(_ => IO.never) // ne pas fermer le serveur
-        .as(ExitCode.Success)
 }
