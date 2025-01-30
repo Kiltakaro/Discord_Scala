@@ -1,6 +1,6 @@
 Je laisse la doc/tuto au dessus pour qu'on comprenne
 Faites pareil sinon on va jamais rien comprendre au code
-
+Je sais c'est le bordel à cause de ça mais on fera le tri plus tard
 
 Pour le moment les commandes utiles
 - pour lancer le projet

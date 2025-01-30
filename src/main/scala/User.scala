@@ -4,14 +4,32 @@ import io.circe.syntax._
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.dsl.io._
+import org.http4s.circe.CirceEntityDecoder._
 
+import cats.effect.IO
+// import cats.effect.concurrent.Ref
+import cats.implicits._
+
+
+// Oui on utilisera des UUID plus tard
 case class User(id: Int, name: String, isAdmin: Boolean)
+
+case class UserInput(name: String)
 
 object User {
 
+    // on peut pas faire += comme tout le monde...
+    // https://www.oreilly.com/library/view/scala-cookbook/9781449340292/ch11s04.html
+    def addUser(user: UserInput): IO[Response[IO]] = {
+        users = User(3, user.name, false) :: users
+        Ok(user.asJson)
+    }
+
     // stockage temporaire users
-    // faudra ajouter clickhouse
-    val users = List(
+    // faudra ajouter clickhouse ou pas psk askip c'est payant en fait
+    // JB a dit pas de VAR donc faudra surement changer pour des Ref plus tard
+    // mais tfacon les users seront dans une BDD
+    var users = List(
         User(1, "Tanny", true),
         User(2, "Secours", false),
     )
@@ -35,7 +53,22 @@ object User {
                 case None => 
                     NotFound(s"No user with id : $id")
             }
-        
+
+        // Pour tester : 
+        // curl -X POST http://localhost:8080/users/echo -d test
+        // https://http4s.org/v1/docs/server-middleware.html
+        case r @ POST -> Root / "echo" => 
+            r.as[String].flatMap(Ok(_))
+
+        // j'improve ça la prochaine fois 
+        case r @ POST -> Root / "add" =>
+            r.as[UserInput].attempt.flatMap {
+                case Right(user: UserInput) =>
+                    addUser(user)
+                    Ok(user.asJson)
+                case Left(_) =>
+                    BadRequest("Error format {name: String}")
+            }
         // TOUJOURS LAISSER A LA FIN
         case GET -> Root / _ =>
             NotFound("User Route Not FOund")

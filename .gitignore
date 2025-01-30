@@ -1,8 +1,11 @@
 .vscode
 .metals
+.bloop
 target
 projet/target
 Old_tests.txt
+project/metals.sbt
+project/project/metals.sbt
 
 
 ######## Clickhouse #########
