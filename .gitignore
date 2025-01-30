@@ -3,3 +3,29 @@
 target
 projet/target
 Old_tests.txt
+
+
+######## Clickhouse #########
+
+data/
+logs/
+tmp/
+
+config.xml
+users.xml
+
+####### TO COMMENT LATER ######
+
+user_files/
+user_scripts/
+store/
+metadata_dropped/
+flags/
+dictionaries_lib/
+preprocessed_configs/
+metadata/
+format_schemas
+clickhouse
+uuid
+
+#############################
