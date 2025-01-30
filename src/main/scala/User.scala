@@ -17,8 +17,9 @@ object User {
     )
 
 
+    // PLUS BESOIN DE METTRE USER DANS LA ROUTE CAR IL EST DANS LE ROUTEUR
     val userRoutes= HttpRoutes.of[IO] {
-        case GET -> Root / "users" =>
+        case GET -> Root =>
             Ok(users.asJson) // Renvoie la liste en JSON
 
          // Pour mettre un String dans une route
@@ -27,7 +28,7 @@ object User {
 
         
         // le IntVar() pour mettre des int dans les routes
-        case GET -> Root / "users" / IntVar(id) =>
+        case GET -> Root / IntVar(id) =>
             users.find(_.id == id) match {
                 case Some(user) => 
                     Ok(user.asJson)
@@ -35,8 +36,9 @@ object User {
                     NotFound(s"No user with id : $id")
             }
         
-        case _ =>
-            NotFound("User route error")
+        // TOUJOURS LAISSER A LA FIN
+        case GET -> Root / _ =>
+            NotFound("User Route Not FOund")
     }
 
     // https://http4s.org/v1/docs/json.html#a-hello-world-service

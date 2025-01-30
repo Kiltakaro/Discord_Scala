@@ -27,12 +27,13 @@ object Admin {
     // Définir des routes
     // https://http4s.org/v1/docs/middleware.html#composing-services-with-middleware
     val adminRoutes = HttpRoutes.of[IO] {
-        case GET -> Root / "admin" / "ping" =>
+        case GET -> Root / "ping" =>
             Ok(AdminStatus("Admin route works!").asJson)
 
-        // TOUJOURS LAISSER A LA FIN
-        case _ =>
-            NotFound("Admin Error")
+
+        // Toujours laisser a la fin
+        case GET -> Root / _ =>
+            NotFound("Admin Route Not FOund")
     }
 
     // https://http4s.org/v1/docs/json.html#a-hello-world-service
