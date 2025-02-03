@@ -17,6 +17,8 @@ tmp/
 config.xml
 users.xml
 
+status
+
 ####### TO COMMENT LATER ######
 
 user_files/
@@ -32,3 +34,4 @@ clickhouse
 uuid
 
 #############################
+.bsp/sbt.json
