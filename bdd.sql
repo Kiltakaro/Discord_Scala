@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS User (
     roles Array(UUID),
     guilds Array(UUID)
 ) ENGINE = MergeTree
-ORDER BY user_id
+ORDER BY user_id;
 
 
 CREATE TABLE IF NOT EXISTS Guild (
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS Guild (
     channels Array(UUID),
     banned_users Array(UUID)
 ) ENGINE = MergeTree
-ORDER BY guild_id
+ORDER BY guild_id;
 
 
 CREATE TABLE IF NOT EXISTS Channel (
@@ -34,14 +34,14 @@ CREATE TABLE IF NOT EXISTS Channel (
     members_allowed Array(UUID),
     messages Array(UUID)
 ) ENGINE = MergeTree
-ORDER BY channel_id
+ORDER BY channel_id;
 
 
 CREATE TABLE IF NOT EXISTS DM_Channel (
     dm_channel_id UUID DEFAULT generateUUIDv4(),
     members Array(UUID),
 ) ENGINE = MergeTree
-ORDER BY dm_channel_id
+ORDER BY dm_channel_id;
 
 
 CREATE TABLE IF NOT EXISTS Message (
@@ -51,12 +51,11 @@ CREATE TABLE IF NOT EXISTS Message (
     sent_at DateTime64,
     content String
 ) ENGINE = MergeTree
-ORDER BY sent_at
+ORDER BY sent_at;
 
 
 CREATE TABLE IF NOT EXISTS Role (
     role_id UUID DEFAULT generateUUIDv4(),
     role_name String
 ) ENGINE = MergeTree
-ORDER BY role_id
-
+ORDER BY role_id;
