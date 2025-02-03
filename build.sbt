@@ -4,7 +4,7 @@ name := "hello-world"
 
 version := "0.1"
 
-// FS2 parce que c'est beaucoup plus expliqué au niveau de la doc cf (notre exposé sur les streams)
+// FS2 parce que c'est beaucoup plus expliqué au niveau de la doc (cf notre exposé sur les streams)
 val fs2Version = "3.9.2"
 
 // Je fais un test, dont mind me
@@ -45,7 +45,7 @@ libraryDependencies ++= Seq(
     "org.tpolecat" %% "doobie-core"     % DoobieVersion,
     "org.tpolecat" %% "doobie-postgres" % DoobieVersion,
     "org.tpolecat" %% "doobie-hikari"   % DoobieVersion,
-    "io.estatico"  %% "newtype"         % NewTypeVersion
+    "com.clickhouse" % "clickhouse-jdbc" % "0.6.0",
 
 
 

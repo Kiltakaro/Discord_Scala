@@ -8,3 +8,25 @@ sbt run
 - pour tester, depuis un autre terminal 
 curl http://localhost:8080/admin/ping
 vous comprenez le paterne
+
+
+
+Structure du projet
+
+/discord-scala-app
+│── /src
+│   ├── /main
+│   │   ├── /scala
+│   │   │   ├── /config        # Configuration files (database, API keys)
+│   │   │   ├── /models        # Case classes representing DB tables (User, Message, Server)
+│   │   │   ├── /services      # Business logic (UserService, MessageService, etc.)
+│   │   │   ├── /repositories  # Database access layer
+│   │   │   ├── /routes        # HTTP API endpoints
+│   │   │   ├── /websockets    # WebSocket handlers
+│   │   │   ├── /kafka         # Kafka consumers/producers for messaging
+│   │   │   ├── /utils         # Helpers, JWT authentication, etc.
+│   │   ├── /resources
+│   │   │   ├── application.conf  # Configuration file
+│── /test                   # Unit and integration tests
+│── build.sbt               # Dependencies and build configurations
+│── README.md               # Documentation
