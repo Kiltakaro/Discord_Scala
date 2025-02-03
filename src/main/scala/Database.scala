@@ -20,7 +20,7 @@ import doobie.util.transactor.Transactor._
 
 
 // Jvais essayer de me connecter a clickhouse ici pour pas flinguer le main
-object Database extends IOApp {
+object Database {
 
     // APRES AVOIR REGARDER CE CODE JE VOUS CONSEILLE FORTEMENT DE LIRE LE TUTO MAIS APRES SINON
     // ça va etre comme moi : ça m'a pris 7 h pour faire ce truc :skull:
@@ -90,20 +90,5 @@ object Database extends IOApp {
         // jsuis quasi sur qu'on peut faire ça en une ligne genre 
         // query.to[List].transact(xa) sans les typages mais a voir plutot et c'est peut etre moins propre
     }
-
-    //////////////////// LANCEMENT //////////////////////
-
-    // Comme dans le main, lancement de la connexion au serveur clickhouse
-    def run(args: List[String]): IO[ExitCode] = {
-        clickhouseTransactor.use { xa =>
-            for {
-                _ <- insertUser(xa) // Insert User
-                users <- readUsers(xa) // fetch les users
-                _ <- IO(println(s"Utilisateurs en base : $users")) // Affichage, Normalement c'est la derniere ligne du terminal
-                _ <- IO.never // Au risque de me répéter, c'est pour éviter que le programme se termine (nous rende la main)
-            } yield ExitCode.Success // ça c'est psk j'ai pas extend IOApp.Simple a voir plus tard
-        }
-    }
-
     // MTN allez regarder le fichier tips svp
 }
