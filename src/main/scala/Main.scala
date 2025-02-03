@@ -4,51 +4,18 @@ import org.http4s.ember.server._
 import org.typelevel.log4cats.LoggerFactory
 import org.http4s.server.middleware.Logger
 
-// import cats.syntax.semigroupk._
-// import cats.SemigroupK.nonInheritedOps.toSemigroupKOps
-// import cats.SemigroupK.ops.toAllSemigroupKOps
-// import cats.implicits.toSemigroupKOps
-// import cats.syntax.all.toSemigroupKOps
-// import cats.syntax.semigroupk.toSemigroupKOps
-
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 
 import org.http4s.server.Router
 
 import cats.data.NonEmptyList
 import cats.implicits._
-import doobie._
-import doobie.implicits._
-import io.estatico.newtype.macros.newtype
 import java.util.UUID
-// Very important to deal with arrays
-import doobie.postgres._
-import doobie.postgres.implicits._
-import doobie.util.transactor.Transactor._
-
 
 
 // On peut exetends IOApp plutot que IOApp.Simple mais ça a l'air plus simple la version "IOApp.Simple"
 // a voir plus tard
 object Main extends IOApp.Simple {
-
-
-    // val postgres: Resource[IO, HikariTransactor[IO]] = for {
-    // ce <- ExecutionContexts.fixedThreadPool[IO](32)
-    // xa <- HikariTransactor.newHikariTransactor[IO](
-    //     "org.postgresql.Driver",
-    //     "jdbc:postgresql:myimdb",
-    //     "postgres",
-    //     "example",    // The password
-    //     ce
-    // )
-    // } yield xa
-    // val xa: Transactor[IO] = Transactor.fromDriverManager[IO](
-    //     "org.postgresql.Driver",
-    //     "jdbc:postgresql:myimdb",
-    //     "docker",  // username
-    //     "docker"   // password
-    // )
 
     given loggerFactory: LoggerFactory[IO] = Slf4jFactory.create[IO]
     val logger = loggerFactory.getLogger

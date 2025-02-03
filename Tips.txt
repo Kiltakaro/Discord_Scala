@@ -5,6 +5,24 @@ Je sais c'est le bordel à cause de ça mais on fera le tri plus tard
 Pour le moment les commandes utiles
 - pour lancer le projet
 sbt run 
+(chosir main si un choix est proposé)
 - pour tester, depuis un autre terminal 
 curl http://localhost:8080/admin/ping
 vous comprenez le paterne
+
+/////////////////////// POUR CLICKHOUSE //////////////////////
+
+Lorsque changements dans le build.sbt il faut recompiler
+sbt compile 
+
+telechargez clickhouse
+installez clickhouse normalement ça met un msg install
+vous allez créer un compte mais osef
+dans un terminal
+clickhouse server
+
+dans l'autre terminal, classique sbt run mais la vous choisissez DATABASE (en gros type 1)
+
+Le Pb avec ça c'est que le server dans le main ne se lancera pas donc les routes sont inutilisables
+Donc si quelqu'un veut s'y coller : faire en sorte que l'on puisse lancer ces 2 trucs en meme temps
+

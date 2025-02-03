@@ -7,7 +7,6 @@ version := "0.1"
 // FS2 parce que c'est beaucoup plus expliqué au niveau de la doc cf (notre exposé sur les streams)
 val fs2Version = "3.9.2"
 
-// Je fais un test, dont mind me
 // https://http4s.org/
 // Askip c'est good avec fs2 cf premiere page
 val http4sVersion = "0.23.26"
@@ -15,7 +14,8 @@ val http4sVersion = "0.23.26"
 // ??????????
 val catsEffectVersion = "3.5.2"
 
-val DoobieVersion = "1.0.0-RC1"
+// Le tuto disat RC1 mais si c'est pas le RC4 ça crash de mon coté
+val DoobieVersion = "1.0.0-RC4"
 val NewTypeVersion = "0.4.4"
 
 // Je rajoute un max de dependances que je trouve dans les tutos puis on fera le tri après
@@ -42,12 +42,11 @@ libraryDependencies ++= Seq(
     "org.typelevel" %% "cats-effect" % catsEffectVersion,
 
     // Pour Doobie
-    "org.tpolecat" %% "doobie-core"     % DoobieVersion,
-    "org.tpolecat" %% "doobie-postgres" % DoobieVersion,
-    "org.tpolecat" %% "doobie-hikari"   % DoobieVersion,
-    "io.estatico"  %% "newtype"         % NewTypeVersion
+    "org.tpolecat" %% "doobie-core" % DoobieVersion,
+    "org.tpolecat" %% "doobie-hikari" % DoobieVersion,
+    "ru.yandex.clickhouse" % "clickhouse-jdbc" % "0.3.2",
 
-
+   
 
     // https://http4s.org/v1/docs/json.html
     // ça sera surement utile

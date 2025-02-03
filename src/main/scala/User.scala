@@ -95,7 +95,7 @@ object User {
         //     deleteUser(id)
         //     BadRequest("Error no")
 
-=        // TOUJOURS LAISSER A LA FIN
+        // TOUJOURS LAISSER A LA FIN
         case GET -> Root / _ =>
             NotFound("User Route Not FOund")
     }
