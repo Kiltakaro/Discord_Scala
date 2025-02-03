@@ -25,8 +25,17 @@ object User {
         Ok(user.asJson)
     }
 
+    def deleteUser(id: Int): IO[Response[IO]] = {
+        users.find(_.id == id) match {
+        case Some(user) =>
+            // ajouter un delete sur la bdd
+            Ok("deleted")
+        case None =>
+            NotFound(s"No user with id $id found")
+        }
+    }
+
     // stockage temporaire users
-    // faudra ajouter clickhouse ou pas psk askip c'est payant en fait
     // JB a dit pas de VAR donc faudra surement changer pour des Ref plus tard
     // mais tfacon les users seront dans une BDD
     var users = List(
@@ -45,6 +54,34 @@ object User {
             Ok(s"Hello, $name.")
 
         
+        // Pour tester : 
+        // curl -X POST http://localhost:8080/users/echo -d test
+        // https://http4s.org/v1/docs/server-middleware.html
+        case r @ POST -> Root / "echo" => 
+            r.as[String].flatMap(Ok(_))
+
+
+        ///////////////////////// CRUD /////////////////////////////
+
+        // faudra peut etre enlever le mot "Create" dans la route
+        // j'improve ça la prochaine fois 
+        // change add => create pour CRUD
+        case r @ POST -> Root / "create" =>
+            r.as[UserInput].attempt.flatMap {
+                case Right(user: UserInput) =>
+                    if (user.name.length > 0) {
+                        addUser(user)
+                        Ok(user.asJson)
+                    }
+                    else {
+                        BadRequest("Name must be longer")
+                    }
+                case Left(_) =>
+                    BadRequest("Error format {name: String}")
+        }
+
+
+        // READ
         // le IntVar() pour mettre des int dans les routes
         case GET -> Root / IntVar(id) =>
             users.find(_.id == id) match {
@@ -54,22 +91,11 @@ object User {
                     NotFound(s"No user with id : $id")
             }
 
-        // Pour tester : 
-        // curl -X POST http://localhost:8080/users/echo -d test
-        // https://http4s.org/v1/docs/server-middleware.html
-        case r @ POST -> Root / "echo" => 
-            r.as[String].flatMap(Ok(_))
+        // case DELETE -> Root / IntVar(id) =>
+        //     deleteUser(id)
+        //     BadRequest("Error no")
 
-        // j'improve ça la prochaine fois 
-        case r @ POST -> Root / "add" =>
-            r.as[UserInput].attempt.flatMap {
-                case Right(user: UserInput) =>
-                    addUser(user)
-                    Ok(user.asJson)
-                case Left(_) =>
-                    BadRequest("Error format {name: String}")
-            }
-        // TOUJOURS LAISSER A LA FIN
+=        // TOUJOURS LAISSER A LA FIN
         case GET -> Root / _ =>
             NotFound("User Route Not FOund")
     }

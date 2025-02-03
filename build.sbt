@@ -15,6 +15,8 @@ val http4sVersion = "0.23.26"
 // ??????????
 val catsEffectVersion = "3.5.2"
 
+val DoobieVersion = "1.0.0-RC1"
+val NewTypeVersion = "0.4.4"
 
 // Je rajoute un max de dependances que je trouve dans les tutos puis on fera le tri après
 libraryDependencies ++= Seq(
@@ -38,6 +40,13 @@ libraryDependencies ++= Seq(
     "org.http4s" %% "http4s-server" % http4sVersion,
     // aucune idée le tuto recommande ça aussi 
     "org.typelevel" %% "cats-effect" % catsEffectVersion,
+
+    // Pour Doobie
+    "org.tpolecat" %% "doobie-core"     % DoobieVersion,
+    "org.tpolecat" %% "doobie-postgres" % DoobieVersion,
+    "org.tpolecat" %% "doobie-hikari"   % DoobieVersion,
+    "io.estatico"  %% "newtype"         % NewTypeVersion
+
 
 
     // https://http4s.org/v1/docs/json.html
