@@ -26,3 +26,10 @@ dans l'autre terminal, classique sbt run mais la vous choisissez DATABASE (en gr
 Le Pb avec ça c'est que le server dans le main ne se lancera pas donc les routes sont inutilisables
 Donc si quelqu'un veut s'y coller : faire en sorte que l'on puisse lancer ces 2 trucs en meme temps
 
+
+//////////////////// À FAIRE POUR LA BDD /////////////////////
+
+Peut être qu'on peut fusionner les tables Channel et DM_Channel et les tables Message et DM_Message ?
+Gestion des permissions : comment on s'y prend ?
+Voir pour assurer l'unicité des UUID (generateUUIDv4() a déjà une sécu mais si jamais on veut forcer un ID faut faire gaffe)
+
