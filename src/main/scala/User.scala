@@ -56,30 +56,30 @@ object User {
         .transact(xa)
     }
 
-    def deleteUser(id: Int): IO[Response[IO]] = {
-        users.find(_.id == id) match {
-        case Some(user) =>
-            // ajouter un delete sur la bdd
-            Ok("deleted")
-        case None =>
-            NotFound(s"No user with id $id found")
-        }
-    }
+    def deleteUser(id: UUID, xa: Transactor[IO]): IO[Int] = {
+        val deleteUser = sql"DELETE FROM User WHERE user_id = $id"
+        .update
+        .run
+        deleteUser.transact(xa)
+     }
+
 
     // stockage temporaire users
     // JB a dit pas de VAR donc faudra surement changer pour des Ref plus tard
     // mais tfacon les users seront dans une BDD
+
+    // Maintenant on a plus besoin de ça, je laisse quand même au cas où pour des tests
+    /*
     var users = List(
         User(1, "Tanny", "abc", true),
         User(2, "Secours", "def", false),
-    )
+    )*/
 
 
     // PLUS BESOIN DE METTRE USER DANS LA ROUTE CAR IL EST DANS LE ROUTEUR
     def userRoutes(xa: Transactor[IO])= {
         HttpRoutes.of[IO] {
             // READ
-
             // Attention la requête c'est /users/<uuid> et pas /users?id=<uuid>, ça peut porter à confusion l'id n'est pas un paramètre
             case GET -> Root / UUIDVar(id) =>
                 getUserById(id, xa).flatMap { 
@@ -93,7 +93,8 @@ object User {
 
                         }
                 }
-
+            
+            // Recup tous les user
             case GET -> Root =>
                 getAllUsers(xa).flatMap { users => 
                     Ok(users.asJson)
@@ -128,10 +129,30 @@ object User {
                             BadRequest("Name must be longer")
                         }
                     case Left(_) =>
-                        BadRequest("Error format {name: String}")
+                        BadRequest("Error format {name: String, password: String, isAdmin: Boolean}")
+                }
+            
+
+            // Supprime un user
+            case DELETE -> Root / UUIDVar(id) =>
+                getUserById(id, xa).flatMap {
+                    userOption =>
+                        userOption match {
+
+                            case Some(user) => 
+                                deleteUser(id, xa).flatMap {
+                                    result =>
+                                        Ok(s"Affected rows : $result")
+                                }
+
+                            case None => 
+                                NotFound(s"Couldn't delete user with id $id : not found")
+                        }
+
                 }
 
-
+            
+            // Route not found à laisser
             case GET -> Root / _ =>
                 NotFound("User Route Not Found")
             }
