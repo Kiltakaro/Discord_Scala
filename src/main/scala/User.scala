@@ -9,20 +9,51 @@ import org.http4s.circe.CirceEntityDecoder._
 import cats.effect.IO
 // import cats.effect.concurrent.Ref
 import cats.implicits._
+import doobie.util.transactor.Transactor
+import doobie.implicits._
+import javax.xml.crypto.Data
+import java.util.UUID
+import doobie.util.meta.Meta
 
 
 // Oui on utilisera des UUID plus tard
-case class User(id: Int, name: String, isAdmin: Boolean)
+case class User(id: Int, name: String, password: String, isAdmin: Boolean)
 
-case class UserInput(name: String)
+case class UserInput(name: String, password: String, isAdmin: Boolean)
 
 object User {
+    implicit val uuidMeta: Meta[UUID] = Meta[String].imap[UUID](UUID.fromString)(_.toString)
+
 
     // on peut pas faire += comme tout le monde...
     // https://www.oreilly.com/library/view/scala-cookbook/9781449340292/ch11s04.html
-    def addUser(user: UserInput): IO[Response[IO]] = {
-        users = User(3, user.name, false) :: users
-        Ok(user.asJson)
+    def addUser(user: UserInput, xa: Transactor[IO]): IO[Int] = {
+        // users = User(3, user.name, false) :: users
+        // Ok(user.asJson)
+
+        // val userId = UUID.randomUUID().toString // toString() psk sinon ça bug voila pensez y.
+        // val userId2 = "88888888-8888-8888-8888-888888888888" // Fake UUID et Avec celui ci vous voyez VRAIMENT que ça marche
+
+        val insertUser = // flemme de typer
+        sql"""
+            INSERT INTO User (username, password)
+            VALUES (${user.name}, ${user.password})
+        """.update.run
+        insertUser.transact(xa)
+    }
+
+    // Récupère tous les user dans la bdd (faudra adapter pour récupérer seulement ceux d'un certain serveur)
+    def getAllUsers(xa: Transactor[IO]): IO[List[(UUID, String, String)]] = {
+        val query = sql"SELECT user_id, username, password FROM User".query[(UUID, String, String)]
+        val queryToList: doobie.ConnectionIO[List[(UUID, String, String)]] = query.to[List]
+        queryToList.transact(xa)
+    }
+
+    def getUserById(id: UUID, xa: Transactor[IO]): IO[Option[(UUID, String, String)]]= {
+        sql"SELECT user_id, username, password FROM User WHERE user_id = $id"
+        .query[(UUID, String, String)]
+        .option
+        .transact(xa)
     }
 
     def deleteUser(id: Int): IO[Response[IO]] = {
@@ -39,68 +70,73 @@ object User {
     // JB a dit pas de VAR donc faudra surement changer pour des Ref plus tard
     // mais tfacon les users seront dans une BDD
     var users = List(
-        User(1, "Tanny", true),
-        User(2, "Secours", false),
+        User(1, "Tanny", "abc", true),
+        User(2, "Secours", "def", false),
     )
 
 
     // PLUS BESOIN DE METTRE USER DANS LA ROUTE CAR IL EST DANS LE ROUTEUR
-    val userRoutes= HttpRoutes.of[IO] {
-        case GET -> Root =>
-            Ok(users.asJson) // Renvoie la liste en JSON
+    def userRoutes(xa: Transactor[IO])= {
+        HttpRoutes.of[IO] {
+            // READ
 
-         // Pour mettre un String dans une route
-        case GET -> Root / "hello" / name =>
-            Ok(s"Hello, $name.")
+            // Attention la requête c'est /users/<uuid> et pas /users?id=<uuid>, ça peut porter à confusion l'id n'est pas un paramètre
+            case GET -> Root / UUIDVar(id) =>
+                getUserById(id, xa).flatMap { 
+                    userOption => 
+                        userOption match {
+                        case Some((id, username, password)) => 
+                            Ok((id, username, password).asJson)
 
-        
-        // Pour tester : 
-        // curl -X POST http://localhost:8080/users/echo -d test
-        // https://http4s.org/v1/docs/server-middleware.html
-        case r @ POST -> Root / "echo" => 
-            r.as[String].flatMap(Ok(_))
+                        case None =>
+                            NotFound(s"No user with ID : $id")
+
+                        }
+                }
+
+            case GET -> Root =>
+                getAllUsers(xa).flatMap { users => 
+                    Ok(users.asJson)
+                }
+
+            // Pour mettre un String dans une route
+            case GET -> Root / "hello" / name =>
+                Ok(s"Hello, $name.")
+
+            
+            // Pour tester : 
+            // curl -X POST http://localhost:8080/users/echo -d test
+            // https://http4s.org/v1/docs/server-middleware.html
+            case r @ POST -> Root / "echo" => 
+                r.as[String].flatMap(Ok(_))
 
 
-        ///////////////////////// CRUD /////////////////////////////
+            ///////////////////////// CRUD /////////////////////////////
 
-        // faudra peut etre enlever le mot "Create" dans la route
-        // j'improve ça la prochaine fois 
-        // change add => create pour CRUD
-        case r @ POST -> Root / "create" =>
-            r.as[UserInput].attempt.flatMap {
-                case Right(user: UserInput) =>
-                    if (user.name.length > 0) {
-                        addUser(user)
-                        Ok(user.asJson)
-                    }
-                    else {
-                        BadRequest("Name must be longer")
-                    }
-                case Left(_) =>
-                    BadRequest("Error format {name: String}")
-        }
+            // faudra peut etre enlever le mot "Create" dans la route
+            // j'improve ça la prochaine fois 
+            // change add => create pour CRUD
+            case r @ POST -> Root / "create" =>
+                r.as[UserInput].attempt.flatMap {
+                    case Right(user: UserInput) =>
+                        if (user.name.length > 0) {
+                            addUser(user, xa).flatMap { result =>
+                                Ok(s"rows affected : $result")
+                            }
+                        }
+                        else {
+                            BadRequest("Name must be longer")
+                        }
+                    case Left(_) =>
+                        BadRequest("Error format {name: String}")
+                }
 
 
-        // READ
-        // le IntVar() pour mettre des int dans les routes
-        case GET -> Root / IntVar(id) =>
-            users.find(_.id == id) match {
-                case Some(user) => 
-                    Ok(user.asJson)
-                case None => 
-                    NotFound(s"No user with id : $id")
+            case GET -> Root / _ =>
+                NotFound("User Route Not Found")
             }
-
-        // case DELETE -> Root / IntVar(id) =>
-        //     deleteUser(id)
-        //     BadRequest("Error no")
-
-        // TOUJOURS LAISSER A LA FIN
-        case GET -> Root / _ =>
-            NotFound("User Route Not FOund")
-    }
-
-    // https://http4s.org/v1/docs/json.html#a-hello-world-service
-    // app avec nos routes 
-    val httpApp: HttpApp[IO] = userRoutes.orNotFound
+        }
+                        // https://http4s.org/v1/docs/json.html#a-hello-world-service
+                        // app avec nos routes 
+                        // val httpApp: HttpApp[IO] = userRoutes.orNotFound
 }

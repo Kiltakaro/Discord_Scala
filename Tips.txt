@@ -21,11 +21,10 @@ vous allez créer un compte mais osef
 dans un terminal
 clickhouse server
 
-dans l'autre terminal, classique sbt run mais la vous choisissez DATABASE (en gros type 1)
+////////////////////// DERNIÈRES NEWS //////////////////////////
 
-Le Pb avec ça c'est que le server dans le main ne se lancera pas donc les routes sont inutilisables
-Donc si quelqu'un veut s'y coller : faire en sorte que l'on puisse lancer ces 2 trucs en meme temps
-
+On a plus besoin du fichier HttpServer.scala, tout se fait dans le main maintenant, c'est plus simple
+Pour les opérations CRUD, pour le user il reste DELETE à faire, faut voir pour récup les user d'un serveur plus tard
 
 //////////////////// À FAIRE POUR LA BDD /////////////////////
 
