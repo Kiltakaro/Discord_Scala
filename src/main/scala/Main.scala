@@ -24,11 +24,9 @@ object Main extends IOApp {
 
     // https://stackoverflow.com/questions/58446033/how-to-combine-authedroutes-and-httproutes-in-http4s
 
-    // OK Router fonctionne 
     // https://http4s.org/v1/docs/service.html
-    
-    
 
+    
 
     // Démarrage du serveur
     def startServer(finalHttpApp: HttpApp[IO]): IO[ExitCode] = {
@@ -52,7 +50,8 @@ object Main extends IOApp {
                 val finalHttpApp = Logger.httpApp(true, true)(
                     Router(
                         "/admin" -> Admin.adminRoutes,
-                        "/users" -> User.userRoutes(xa)
+                        "/users" -> User.userRoutes(xa),
+                        "/guilds" -> Guild.guildRoutes(xa)
                     ).orNotFound
                 )
                 startServer(finalHttpApp)

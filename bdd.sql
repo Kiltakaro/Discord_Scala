@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS Guild (
     guild_name String,
     guild_description String,
     owner_id UUID,
-    creation_date DateTime,
+    creation_date DateTime DEFAULT now(),
     members Array(UUID),
     channels Array(UUID),
     roles Array(UUID) DEFAULT [],
