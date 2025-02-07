@@ -16,7 +16,6 @@ import java.util.UUID
 import doobie.util.meta.Meta
 
 
-// Oui on utilisera des UUID plus tard
 case class User(id: UUID, name: String, password: String, isAdmin: Boolean)
 
 case class UserInput(name: String, password: String, isAdmin: Boolean)
@@ -47,6 +46,13 @@ object User {
         val query = sql"SELECT user_id, username, password FROM User".query[(UUID, String, String)]
         val queryToList: doobie.ConnectionIO[List[(UUID, String, String)]] = query.to[List]
         queryToList.transact(xa)
+    }
+
+    def getGuilds(id: UUID, xa: Transactor[IO]): IO[List[UUID]] = {
+        val query: doobie.ConnectionIO[List[UUID]] = sql"SELECT guilds FROM User WHERE user_id = $id"
+          .query[UUID]
+          .to[List]
+        query.transact(xa)
     }
 
     def getUserById(id: UUID, xa: Transactor[IO]): IO[Option[(UUID, String, String)]]= {
@@ -84,8 +90,10 @@ object User {
 
 
     // PLUS BESOIN DE METTRE USER DANS LA ROUTE CAR IL EST DANS LE ROUTEUR
-    def userRoutes(xa: Transactor[IO])= {
+    def userRoutes(xa: Transactor[IO]): HttpRoutes[IO] = {
         HttpRoutes.of[IO] {
+            ///////////////////////// CRUD /////////////////////////////
+
             // READ
             // Attention la requête c'est /users/<uuid> et pas /users?id=<uuid>, ça peut porter à confusion l'id n'est pas un paramètre
             case GET -> Root / UUIDVar(id) =>
@@ -97,8 +105,13 @@ object User {
 
                         case None =>
                             NotFound(s"No user with ID : $id")
-
                         }
+                }
+
+            // Récup tous les serveurs d'un user (WIP je sais pas comment récup / utiliser un array clickhouse en scala)
+            case GET -> Root / UUIDVar(id) / "guilds" =>
+                getGuilds(id, xa).flatMap { guilds =>
+                    Ok(guilds.asJson)
                 }
             
             // Recup tous les user
@@ -119,7 +132,6 @@ object User {
                 r.as[String].flatMap(Ok(_))
 
 
-            ///////////////////////// CRUD /////////////////////////////
 
             // faudra peut etre enlever le mot "Create" dans la route
             // j'improve ça la prochaine fois 
@@ -127,7 +139,7 @@ object User {
             case r @ POST -> Root / "create" =>
                 r.as[UserInput].attempt.flatMap {
                     case Right(user: UserInput) =>
-                        if (user.name.length > 0) {
+                        if (user.name.nonEmpty) {
                             addUser(user, xa).flatMap { result =>
                                 Ok(s"rows affected : $result")
                             }
@@ -146,7 +158,7 @@ object User {
                         case Some(user) => 
                             r.as[UserInput].attempt.flatMap {
                                 case Right(user) => 
-                                    if(user.name.length > 0) {
+                                    if(user.name.nonEmpty) {
                                         updateUser(id, user, xa).flatMap { result =>
                                             Ok(s"Rows affected : $result")
                                         }

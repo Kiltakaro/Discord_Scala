@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS DM_Message (
     dm_channel_id UUID,
     sender_id UUID,
     content String,
-    sent_at DateTime64 DEFAULT now64()
+    sent_at DateTime64 DEFAULT now()
 ) ENGINE = MergeTree
 ORDER BY sent_at;
 
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS Message (
     channel_id UUID,
     sender_id UUID,
     content String,
-    sent_at DateTime64 DEFAULT now64()
+    sent_at DateTime64 DEFAULT now()
 ) ENGINE = MergeTree
 ORDER BY sent_at;
 
