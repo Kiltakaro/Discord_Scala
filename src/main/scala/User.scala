@@ -17,7 +17,7 @@ import doobie.util.meta.Meta
 
 
 // Oui on utilisera des UUID plus tard
-case class User(id: Int, name: String, password: String, isAdmin: Boolean)
+case class User(id: UUID, name: String, password: String, isAdmin: Boolean)
 
 case class UserInput(name: String, password: String, isAdmin: Boolean)
 
@@ -63,10 +63,17 @@ object User {
         deleteUser.transact(xa)
      }
 
+     def updateUser(id: UUID, user: UserInput, xa: Transactor[IO]): IO[Int] = {
+        sql"ALTER TABLE User UPDATE username=${user.name}, password=${user.password} WHERE user_id = $id"
+        .update
+        .run
+        .transact(xa)
+     }
+
 
     // stockage temporaire users
     // JB a dit pas de VAR donc faudra surement changer pour des Ref plus tard
-    // mais tfacon les users seront dans une BDD
+    // mais tfacon les users seront dans une BDDOption[UUID, String, String]
 
     // Maintenant on a plus besoin de ça, je laisse quand même au cas où pour des tests
     /*
@@ -130,6 +137,30 @@ object User {
                         }
                     case Left(_) =>
                         BadRequest("Error format {name: String, password: String, isAdmin: Boolean}")
+                }
+
+            // Mettre à jour un user. C'est en gros le même principe que pour l'ajout à part qu'on check si le user existe avant
+            case r @ PUT -> Root / UUIDVar(id) => 
+                getUserById(id, xa).flatMap { userOption =>
+                    userOption match { 
+                        case Some(user) => 
+                            r.as[UserInput].attempt.flatMap {
+                                case Right(user) => 
+                                    if(user.name.length > 0) {
+                                        updateUser(id, user, xa).flatMap { result =>
+                                            Ok(s"Rows affected : $result")
+                                        }
+                                    } else {
+                                        BadRequest("Username must not be empty")
+                                    }
+                                
+                                case Left(_) =>
+                                    BadRequest("Bad request. Format : {name: String, password: String, isAdmin: Boolean}")
+                            }
+
+                        case None => 
+                            NotFound(s"Could not update user with id $id : not found")
+                    }
                 }
             
 
