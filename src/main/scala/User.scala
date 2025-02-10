@@ -77,18 +77,6 @@ object User {
      }
 
 
-    // stockage temporaire users
-    // JB a dit pas de VAR donc faudra surement changer pour des Ref plus tard
-    // mais tfacon les users seront dans une BDDOption[UUID, String, String]
-
-    // Maintenant on a plus besoin de ça, je laisse quand même au cas où pour des tests
-    /*
-    var users = List(
-        User(1, "Tanny", "abc", true),
-        User(2, "Secours", "def", false),
-    )*/
-
-
     // PLUS BESOIN DE METTRE USER DANS LA ROUTE CAR IL EST DANS LE ROUTEUR
     def userRoutes(xa: Transactor[IO]): HttpRoutes[IO] = {
         HttpRoutes.of[IO] {
@@ -133,9 +121,7 @@ object User {
 
 
 
-            // faudra peut etre enlever le mot "Create" dans la route
-            // j'improve ça la prochaine fois 
-            // change add => create pour CRUD
+            // Route pour create User
             case r @ POST -> Root / "create" =>
                 r.as[UserInput].attempt.flatMap {
                     case Right(user: UserInput) =>

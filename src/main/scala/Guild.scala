@@ -23,11 +23,13 @@ case class Guild(guild_name: String)
 case class GuildInput(guild_name: String, owner_id : UUID)
 
 
-// AJOUTER GET ALL USERS IN GUILD
-// il faut add in the array of guild_members
 
+// https://rockthejvm.com/articles/learning-doobie-for-the-greater-good
 object Guild {
     implicit val uuidMeta: Meta[UUID] = Meta[String].imap[UUID](UUID.fromString)(_.toString)
+
+
+    //////////////////////// GUILD ITSELF //////////////////////////
 
 
     def addGuild(guild: GuildInput, xa: Transactor[IO]): IO[Int] = {
@@ -61,6 +63,74 @@ object Guild {
         deleteGuild.transact(xa)
      }
 
+    /////////////////////////// GUILD ATTRIBUTS ///////////////////////////
+
+
+    def getGuildDesc(id: UUID, xa: Transactor[IO]): IO[Option[String]] = {
+        sql"SELECT guild_description FROM Guild WHERE guild_id = $id"
+        .query[String]
+        .option
+        .transact(xa)
+    }
+
+    def modifyGuildDesc(id: UUID, guild_description: String, xa: Transactor[IO]): IO[Int] = {
+        val modifyGuild = sql"UPDATE Guild SET guild_description = $guild_description WHERE guild_id = $id"
+        .update
+        .run
+        modifyGuild.transact(xa)
+    }
+
+    def getGuildName(id: UUID, xa: Transactor[IO]): IO[Option[String]] = {
+        sql"SELECT guild_name FROM Guild WHERE guild_id = $id"
+        .query[String]
+        .option
+        .transact(xa)
+    }
+
+    def modifyGuildName(id: UUID, guild_name: String, xa: Transactor[IO]): IO[Int] = {
+        val modifyGuild = sql"UPDATE Guild SET guild_name = $guild_name WHERE guild_id = $id"
+        .update
+        .run
+        modifyGuild.transact(xa)
+    }
+
+
+    def getGuildOwnerId(id: UUID, xa: Transactor[IO]): IO[Option[UUID]] = {
+        sql"SELECT owner_id FROM Guild WHERE guild_id = $id"
+        .query[UUID]
+        .option
+        .transact(xa)
+    }
+
+
+    // Faudra rajouter un moyen de récuperer directement le nom pour l'affichage ça sera utile
+
+
+    def modifyGuildOwner(id: UUID, owner_id: UUID, xa: Transactor[IO]): IO[Int] = {
+        val modifyGuild = sql"UPDATE Guild SET owner_id = $owner_id WHERE guild_id = $id"
+        .update
+        .run
+        modifyGuild.transact(xa)
+    }
+
+    /////////////////////////// GUILD RELATIONS ///////////////////////////
+
+    // // Users
+    def addUserToGuild(userId: UUID, guildId: UUID, xa: Transactor[IO]): IO[Int] = {
+        val addUser = sql"INSERT INTO User_Guild (user_id, guild_id) VALUES ($userId, $guildId)"
+        .update
+        .run
+        addUser.transact(xa)
+    }
+
+    def getUsersInGuild(id: UUID, xa: Transactor[IO]): IO[List[UUID]] = {
+        val getUsers: doobie.ConnectionIO[List[UUID]] = sql"SELECT user_id FROM User_Guild WHERE guild_id = $id"
+          .query[UUID]
+          .to[List]
+        getUsers.transact(xa)
+    }
+
+    /////////////////////////// GUILD ROUTES ///////////////////////////
 
     // PLUS BESOIN DE METTRE Guild DANS LA ROUTE CAR IL EST DANS LE ROUTEUR
     def guildRoutes(xa: Transactor[IO])= {
@@ -91,7 +161,12 @@ object Guild {
                 getAllGuilds(xa).flatMap { guilds => 
                     Ok(guilds.asJson)
                 }
-
+            
+            // Récup tous les serveurs d'un user (WIP je sais pas comment récup / utiliser un array clickhouse en scala)
+            case GET -> Root / UUIDVar(id) / "users" =>
+                getUsersInGuild(id, xa).flatMap { users =>
+                    Ok(users.asJson)
+                }
         
 
             // CREATE

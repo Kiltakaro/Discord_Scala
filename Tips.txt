@@ -29,6 +29,17 @@ On a une route not found pour la méthode GET, est-ce nécessaire d'en créer un
 Le DEFAULT now() semble ne pas marcher du tout avec le fichier sql pour une raison qui m'échappe totalement, si quelqu'un peut tester ça de son côté ce serait cool
 
 
+avec cet exemple de code on peut utiliser le .unique 
+dans une querry ce qui facilitera peut etre la suite
+"If we know for sure that the query will return exactly one row, we can use the unique method:"
+
+    // def findActorByIdProgram(id: Int): IO[Actor] = {
+    //   val findActorById: doobie.ConnectionIO[Actor] =
+    //     sql"select id, name from actors where id = $id".query[Actor].unique
+    //   findActorById.transact(xa)
+    // }
+
+
 //////////////////// À FAIRE POUR LA BDD /////////////////////
 
 Peut être qu'on peut fusionner les tables Channel et DM_Channel et les tables Message et DM_Message ?
