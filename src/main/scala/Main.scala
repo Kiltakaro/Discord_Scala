@@ -55,15 +55,6 @@ object Main extends IOApp {
                     ).orNotFound
                 )
                 startServer(finalHttpApp)
-                    
-                /*
-                for {
-                    _ <- Database.insertUser(xa) // Insert User
-                    users <- Database.readUsers(xa) // fetch les users
-                    _ <- IO(println(s"Utilisateurs en base : $users")) // Affichage, Normalement c'est la derniere ligne du terminal
-                    _ <- IO.never // Au risque de me répéter, c'est pour éviter que le programme se termine (nous rende la main)
-                } yield ExitCode.Success // ça c'est psk j'ai pas extend IOApp.Simple a voir plus tard
-                */
         }
     }
 }

@@ -125,9 +125,16 @@ object Guild {
 
     def getUsersInGuild(id: UUID, xa: Transactor[IO]): IO[List[UUID]] = {
         val getUsers: doobie.ConnectionIO[List[UUID]] = sql"SELECT user_id FROM User_Guild WHERE guild_id = $id"
-          .query[UUID]
-          .to[List]
+        .query[UUID]
+        .to[List]
         getUsers.transact(xa)
+    }
+
+    def removeUserFromGuild(userId: UUID, guildId: UUID, xa: Transactor[IO]): IO[Int] = {
+        val removeUser = sql"DELETE FROM User_Guild WHERE user_id = $userId AND guild_id = $guildId"
+        .update
+        .run
+        removeUser.transact(xa)
     }
 
     /////////////////////////// GUILD ROUTES ///////////////////////////
@@ -140,6 +147,23 @@ object Guild {
             case GET -> Root / "hello" / name =>
                 Ok(s"Hello, $name.")
             
+            // CREATE
+            case r @ POST -> Root / "create" =>
+                r.as[GuildInput].attempt.flatMap {
+                    case Right(guild: GuildInput) =>
+                        if (guild.guild_name.length > 0) {
+                            addGuild(guild, xa).flatMap { result =>
+                                Ok(s"rows affected : $result")
+                            }
+                        }
+                        else {
+                            BadRequest("Name must be longer")
+                        }
+                    case Left(_) =>
+                        BadRequest("Error format {guild_name: String, owner_id : UUID}")
+                }
+
+
             
             // READ
             // Attention la requête c'est /Guilds/<uuid> et pas /Guilds?id=<uuid>, ça peut porter à confusion l'id n'est pas un paramètre
@@ -167,25 +191,11 @@ object Guild {
                 getUsersInGuild(id, xa).flatMap { users =>
                     Ok(users.asJson)
                 }
-        
-
-            // CREATE
-            case r @ POST -> Root / "create" =>
-                r.as[GuildInput].attempt.flatMap {
-                    case Right(guild: GuildInput) =>
-                        if (guild.guild_name.length > 0) {
-                            addGuild(guild, xa).flatMap { result =>
-                                Ok(s"rows affected : $result")
-                            }
-                        }
-                        else {
-                            BadRequest("Name must be longer")
-                        }
-                    case Left(_) =>
-                        BadRequest("Error format {guild_name: String, owner_id : UUID}")
-                }
             
+            // UPDATE ??
 
+
+            //// DELETE
             // Supprime une Guild
             case DELETE -> Root / UUIDVar(id) =>
                 getGuildById(id, xa).flatMap {

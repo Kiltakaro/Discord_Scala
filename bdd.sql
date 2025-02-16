@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS User (
 ) ENGINE = MergeTree
 ORDER BY user_id;
 
+-- Il va nous falloir une friend list
+
 
 CREATE TABLE IF NOT EXISTS Guild (
     guild_id UUID DEFAULT generateUUIDv4(),
@@ -21,12 +23,14 @@ ORDER BY guild_id;
 CREATE TABLE IF NOT EXISTS Channel (
     channel_id UUID DEFAULT generateUUIDv4(),
     channel_name String,
-    channel_description String,
+    channel_description String, -- en y repensant ça à l'air overkill une desc pour un channel
     guild_id UUID,
-    is_private UInt8 DEFAULT 0
+    is_private UInt8 DEFAULT 0 -- Jsuis pas sur de ce truc vu qu'on a DM_CHANNEL en dessous
 ) ENGINE = MergeTree
 ORDER BY channel_id;
 
+-- jpropose Guild_channel relation avec guild
+-- et dm_channel, relation entre 2 users
 
 CREATE TABLE IF NOT EXISTS DM_Channel (
     dm_channel_id UUID DEFAULT generateUUIDv4()

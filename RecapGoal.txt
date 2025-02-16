@@ -1,0 +1,20 @@
+Petit endroit pour recap ou on en est car je mis perds avec tous ces projets
+
+- Creating an account, deleting it, modifying account’s information.
+    (quasi fini)
+- Authentication & Authorization of users on servers.
+    (XXXXXXXXXX)
+- Creating a server, modifying its information, deleting it
+    (quasi fini)
+- Inviting users to servers, allowing users to leave servers
+    (XXXXXXXXXX)
+- Creating channels on servers, modifying channel’s information, removing them.
+    (XXXXXXXXXX)
+- Post messages on channels, delete them, see messages of a channel.
+    (XXXXXXXXXX)
+- Tag users on messages, add emoji and basic reactions.
+    (XXXXXXXXXX)
+- Allow admin actions on servers : ban/kick users, delete message written by someone else
+    (XXXXXXXXXX)
+- Send private messages between users
+    (XXXXXXXXXX)
