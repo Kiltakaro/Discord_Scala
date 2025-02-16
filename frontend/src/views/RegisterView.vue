@@ -26,13 +26,13 @@ const register = () => {
                     required>
             </div>
             <div>
-                <label for="email" class="block text-sm font-medium text-gray-300">email</label>
+                <label for="email" class="block text-sm font-medium text-gray-300">Email</label>
                 <input v-model="email" type="email" id="email"
                     class="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                     required>
             </div>
             <div>
-                <label for="password" class="block text-sm font-medium text-gray-300">Nom d'utilisateur</label>
+                <label for="password" class="block text-sm font-medium text-gray-300">Mot de passe</label>
                 <input v-model="password" type="password" id="password"
                     class="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                     required>
