@@ -2,7 +2,8 @@ import cats.effect._
 import com.comcast.ip4s._
 import org.http4s.ember.server._
 import org.typelevel.log4cats.LoggerFactory
-import org.http4s.server.middleware.Logger
+import org.http4s.server.middleware.{CORS, CORSConfig, Logger}
+import org.http4s.Method
 
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 
@@ -44,17 +45,29 @@ object Main extends IOApp {
     // https://http4s.org/v1/docs/client.html#setup
     // Lancement du serveur et de la connexion à la BDD simultanément
     def run(args: List[String]): IO[ExitCode] = {
-        
-        Database.clickhouseTransactor.use {
-            xa =>
-                val finalHttpApp = Logger.httpApp(true, true)(
+
+        // je cherche plein de trucs pour les erreurs CORS mais je trouve pas la solution
+        // par contre on arrive a faire des quetes sans etre bloqué, enfin je crois
+        Database.clickhouseTransactor.use { xa =>
+            val corsConfig = CORSConfig.default
+                .withAnyOrigin(true)
+                .withAllowedMethods(Some(Set(Method.GET, Method.POST, Method.PUT, Method.DELETE)))
+                .withAllowedHeaders(Some(Set("Content-Type")))
+                // .withAllowedHeaders(Some(Set("Accept", "Content-Type", "Origin", "X-Json", "X-Prototype-Version", "X-Requested-With")))
+                // .withAllowCredentials(true)
+
+            val finalHttpApp = Logger.httpApp(true, true)(
+                CORS(
                     Router(
                         "/admin" -> Admin.adminRoutes,
                         "/users" -> User.userRoutes(xa),
-                        "/guilds" -> Guild.guildRoutes(xa)
-                    ).orNotFound
+                        "/guilds" -> Guild.guildRoutes(xa),
+                        "/auth" -> Authentification.authentificationRoutes(xa)
+                    ).orNotFound,
+                    corsConfig
                 )
-                startServer(finalHttpApp)
+            )
+            startServer(finalHttpApp)
         }
     }
 }

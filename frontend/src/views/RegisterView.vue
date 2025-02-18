@@ -5,12 +5,39 @@ const username = ref('');
 const email = ref('');
 const password = ref('');
 
-const register = () => {
-    console.log('Username:', username.value);
-    console.log('Email:', email.value);
-    console.log('Password:', password.value);
-};
+const register = async () => {
 
+
+    // rajoputer email plus tard
+    const userInput = {
+        username: username.value,
+        password: password.value
+    };
+
+    console.log(userInput);
+    console.log(JSON.stringify(userInput));
+
+    try {
+        const response = await fetch('http://localhost:8080/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userInput)
+        });
+
+        console.log(response);
+
+        if (!response.ok) {
+            const error = await response.json();
+            console.log(error);
+            return;
+        }
+
+    } catch (error) {
+        console.log(error);
+    }
+};
 </script>
 
 <template>

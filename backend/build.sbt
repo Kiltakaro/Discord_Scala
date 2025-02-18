@@ -52,7 +52,16 @@ libraryDependencies ++= Seq(
     // ça sera surement utile
     "org.http4s" %% "http4s-circe" % http4sVersion,
 
-    "co.fs2" %% "fs2-core" % fs2Version
+    "co.fs2" %% "fs2-core" % fs2Version,
+
+    // c'est pour faire des logins avec les JWT 
+    // comme on utilise un truc similaire en python pour le pfe ça devrait aller
+    // https://jwt-scala.github.io/jwt-scala/jwt-circe.html
+    // Pendant longtemps j'ai eu un probleme avec l'IDE qui met des erreur la dessus,
+    // mais quand on test ça marche alors ça m'a l'air ok ?
+    "com.github.jwt-scala" %% "jwt-core" % "10.0.4",
+    "com.github.jwt-scala" %% "jwt-circe" % "10.0.4",
+    "org.scala-lang" %% "toolkit" % "0.7.0",
 )
 
 

@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS Guild (
 ORDER BY guild_id;
 
 CREATE TABLE IF NOT EXISTS Channel (
-    channel_id UUID,
+    channel_id UUID DEFAULT generateUUIDv4(),
     channel_name String,
     friendship_id Nullable(UUID), -- Cas où c'est un channel DM
     guild_id Nullable(UUID) -- Cas où c'est un channel de guild
@@ -61,6 +61,7 @@ ORDER BY user_id;
 
 -- Pour le moment on a pas besoin de ces deux dernières tables
 -- Je les laisse au cas où on décide de gérer les rôles au final
+-- ouais on garde pour le moment et jpense qu'on mettra des id normaux plutot que des uuid
 CREATE TABLE IF NOT EXISTS Role (
     role_id UUID DEFAULT generateUUIDv4(),
     guild_id UUID,

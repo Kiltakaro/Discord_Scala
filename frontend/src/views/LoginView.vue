@@ -4,9 +4,43 @@ import { ref } from 'vue';
 const username = ref('');
 const password = ref('');
 
-const login = () => {
-    console.log('Username:', username.value);
-    console.log('Password:', password.value);
+const login = async () => {
+
+    const userInput = {
+        username: username.value,
+        password: password.value
+    };
+
+    console.log(userInput);
+    console.log(JSON.stringify(userInput));
+
+    try {
+        const response = await fetch('http://localhost:8080/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userInput)
+        });
+
+        console.log(response);
+
+        if (!response.ok) {
+            const error = await response.json();
+            console.log(error);
+            return;
+        }
+
+        // Connexion réussie
+        const data = await response.json();
+        if (data.token) {
+            localStorage.setItem('token', data.token);
+            router.push('/');
+        }
+
+    } catch (error) {
+        console.log(error);
+    }
 };
 </script>
 
@@ -29,7 +63,7 @@ const login = () => {
                     required>
             </div>
             <button type="submit"
-                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">S'inscrire</button>
+                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Connexion</button>
         </form>
 
     </div>

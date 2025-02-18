@@ -26,6 +26,7 @@ object User {
 
     // on peut pas faire += comme tout le monde...
     // https://www.oreilly.com/library/view/scala-cookbook/9781449340292/ch11s04.html
+    // renommer en create plus tard (add on dirait que c'est pour rajouter dans la guild)
     def addUser(user: UserInput, xa: Transactor[IO]): IO[Int] = {
         // users = User(3, user.name, false) :: users
         // Ok(user.asJson)
@@ -186,7 +187,7 @@ object User {
                 NotFound("User Route Not Found")
             }
         }
-                        // https://http4s.org/v1/docs/json.html#a-hello-world-service
-                        // app avec nos routes 
-                        // val httpApp: HttpApp[IO] = userRoutes.orNotFound
+    // https://http4s.org/v1/docs/json.html#a-hello-world-service
+    // app avec nos routes 
+    // val httpApp: HttpApp[IO] = userRoutes.orNotFound
 }
