@@ -23,8 +23,6 @@ clickhouse server
 
 ////////////////////// DERNIÈRES NEWS //////////////////////////
 
-On a plus besoin du fichier HttpServer.scala, tout se fait dans le main maintenant, c'est plus simple
-Pour les opérations CRUD, faudra faire une opération UPDATE, faut voir pour récup les user d'un serveur plus tard
 On a une route not found pour la méthode GET, est-ce nécessaire d'en créer une pour POST, DELETE et PUT ?
 Le DEFAULT now() semble ne pas marcher du tout avec le fichier sql pour une raison qui m'échappe totalement, si quelqu'un peut tester ça de son côté ce serait cool
 
@@ -42,7 +40,5 @@ dans une querry ce qui facilitera peut etre la suite
 
 //////////////////// À FAIRE POUR LA BDD /////////////////////
 
-Peut être qu'on peut fusionner les tables Channel et DM_Channel et les tables Message et DM_Message ?
-Gestion des permissions : comment on s'y prend ?
 Voir pour assurer l'unicité des UUID (generateUUIDv4() a déjà une sécu mais si jamais on veut forcer un ID faut faire gaffe)
 
