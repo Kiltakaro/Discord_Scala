@@ -31,20 +31,23 @@ const searchUsers = async () => {
     // Update les users avec les nouveaux trouvés
     users.value = await response.json();
 
+
   } catch (error) {
     console.log(error);
   }
 };
 
 // Il va falloir rajouter un truc pour que l'on ne puisse pas spam l'invitation
+// soit un truc qui marche temporairement
+// soit un truc qui est permanent avec une requete a l'api
 const addFriend = async (friendUUID) => {
 
   const userUUID = localStorage.getItem("userUUID");
-  console.log(userUUID);
-  console.log("friend string : " + friendUUID);
 
   if (!userUUID) {
-    console.log("No userUUID found??????????");
+    return;
+  }
+  if (!friendUUID) {
     return;
   }
 
@@ -70,9 +73,10 @@ const addFriend = async (friendUUID) => {
       return;
     }
     alert("Demande d'ami envoyée !");
+    
 
   } catch (error) {
-    console.error(error);
+    console.log(error);
   }
 };
 </script>
