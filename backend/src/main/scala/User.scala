@@ -18,7 +18,7 @@ import doobie.util.meta.Meta
 // import com.github.t3hnar.bcrypt._
 // import scala.util.{Success, Failure}
 
-case class UserOutput(id: UUID, username: String)
+case class UserOutput(uuid: UUID, username: String)
 
 case class UserInput(username: String, password: String, email: String)
 
@@ -53,7 +53,7 @@ object User {
         sql"""
             SELECT user_id, username FROM User
             WHERE startsWith(username, $username)
-            LIMIT 10
+            LIMIT 9
         """.query[UserOutput].to[List].transact(xa)
         // On va eviter de renvoyer le mot de passe aux utilisateurs ^^
     }

@@ -12,10 +12,17 @@ CREATE TABLE IF NOT EXISTS User (
 ) ENGINE = MergeTree
 ORDER BY user_id;
 
+
+-- j'hésite entre 'pending', 'accepted', 'refused'
+-- car dans ma tete un booléen avec False => pas encore acceptée
+-- True => acceptée
+-- et si le mec clique sur le bouton refusé ça supprime la demande
+-- mais ça voudrait dire qu'on a pas d'historique donc un mec peut spam request
 CREATE TABLE IF NOT EXISTS Friends (
     friendship_id UUID,
     user_id1 UUID,
-    user_id2 UUID
+    user_id2 UUID,
+    request_accepted UInt8 DEFAULT 0,
 ) ENGINE = MergeTree
 ORDER BY user_id1;
 

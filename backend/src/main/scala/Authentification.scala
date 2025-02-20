@@ -166,7 +166,7 @@ object Authentification {
                     loginUser(email, password, xa).flatMap {
                         case Some(userUUID) =>
                             val token = generateToken(userUUID)
-                            Ok(Json.obj("message" -> Json.fromString("User connected"), "token" -> Json.fromString(token)))
+                            Ok(Json.obj("message" -> Json.fromString("User connected"), "userUUID" -> Json.fromString(userUUID.toString), "token" -> Json.fromString(token)))
                         case None =>
                             Ok(Json.obj("error" -> Json.fromString("Invalid credentials")))
                     }

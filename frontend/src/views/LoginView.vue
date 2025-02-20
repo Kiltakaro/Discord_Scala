@@ -38,7 +38,7 @@ const login = async () => {
         const data = await response.json();
         if (data.token) {
             localStorage.setItem('token', data.token);
-            localStorage.setItem('email', email.value); // 
+            localStorage.setItem('userUUID', data.userUUID);
             router.push('/searchfriend');
         }
 
