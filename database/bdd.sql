@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS User (
     user_id UUID DEFAULT generateUUIDv4(),
     username String,
     password String,
-    is_admin UInt8 DEFAULT 0,
+    email String,
     creation_date DateTime DEFAULT now()
 ) ENGINE = MergeTree
 ORDER BY user_id;
