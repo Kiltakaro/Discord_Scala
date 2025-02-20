@@ -1,9 +1,13 @@
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const username = ref('');
 const email = ref('');
 const password = ref('');
+
 
 const register = async () => {
 
@@ -11,6 +15,7 @@ const register = async () => {
     // rajoputer email plus tard
     const userInput = {
         username: username.value,
+        email: email.value,
         password: password.value
     };
 
@@ -33,6 +38,7 @@ const register = async () => {
             console.log(error);
             return;
         }
+        router.push('/login');
 
     } catch (error) {
         console.log(error);

@@ -15,10 +15,12 @@ import javax.xml.crypto.Data
 import java.util.UUID
 import doobie.util.meta.Meta
 
+// import com.github.t3hnar.bcrypt._
+// import scala.util.{Success, Failure}
 
-case class User(id: UUID, name: String, password: String, isAdmin: Boolean)
+case class User(id: UUID, name: String, password: String, email: String)
 
-case class UserInput(name: String, password: String, isAdmin: Boolean)
+case class UserInput(name: String, password: String, email: String)
 
 object User {
     implicit val uuidMeta: Meta[UUID] = Meta[String].imap[UUID](UUID.fromString)(_.toString)
@@ -28,24 +30,20 @@ object User {
     // https://www.oreilly.com/library/view/scala-cookbook/9781449340292/ch11s04.html
     // renommer en create plus tard (add on dirait que c'est pour rajouter dans la guild)
     def addUser(user: UserInput, xa: Transactor[IO]): IO[Int] = {
-        // users = User(3, user.name, false) :: users
-        // Ok(user.asJson)
-
-        // val userId = UUID.randomUUID().toString // toString() psk sinon ça bug voila pensez y.
-        // val userId2 = "88888888-8888-8888-8888-888888888888" // Fake UUID et Avec celui ci vous voyez VRAIMENT que ça marche
-
-        val insertUser = // flemme de typer
+    
+        val hashedPassword = user.password
+        val insertUser =
         sql"""
-            INSERT INTO User (username, password)
-            VALUES (${user.name}, ${user.password})
+            INSERT INTO User (username, password, email)
+            VALUES (${user.name}, ${hashedPassword}, ${user.email})
         """.update.run
         insertUser.transact(xa)
     }
 
     // Récupère tous les user dans la bdd (faudra adapter pour récupérer seulement ceux d'un certain serveur)
-    def getAllUsers(xa: Transactor[IO]): IO[List[(UUID, String, String)]] = {
-        val query = sql"SELECT user_id, username, password FROM User".query[(UUID, String, String)]
-        val queryToList: doobie.ConnectionIO[List[(UUID, String, String)]] = query.to[List]
+    def getAllUsers(xa: Transactor[IO]): IO[List[(UUID, String, String, String)]] = {
+        val query = sql"SELECT user_id, username, email, password FROM User".query[(UUID, String, String, String)]
+        val queryToList: doobie.ConnectionIO[List[(UUID, String, String, String)]] = query.to[List]
         queryToList.transact(xa)
     }
 
@@ -56,9 +54,9 @@ object User {
         query.transact(xa)
     }
 
-    def getUserById(id: UUID, xa: Transactor[IO]): IO[Option[(UUID, String, String)]]= {
-        sql"SELECT user_id, username, password FROM User WHERE user_id = $id"
-        .query[(UUID, String, String)]
+    def getUserById(id: UUID, xa: Transactor[IO]): IO[Option[(UUID, String, String, String)]]= {
+        sql"SELECT user_id, username, password, email FROM User WHERE user_id = $id"
+        .query[(UUID, String, String, String)]
         .option
         .transact(xa)
     }
@@ -71,14 +69,13 @@ object User {
      }
 
      def updateUser(id: UUID, user: UserInput, xa: Transactor[IO]): IO[Int] = {
-        sql"ALTER TABLE User UPDATE username=${user.name}, password=${user.password} WHERE user_id = $id"
+        sql"ALTER TABLE User UPDATE username=${user.name}, password=${user.password}, email=${user.email} WHERE user_id = $id"
         .update
         .run
         .transact(xa)
      }
 
 
-    // PLUS BESOIN DE METTRE USER DANS LA ROUTE CAR IL EST DANS LE ROUTEUR
     def userRoutes(xa: Transactor[IO]): HttpRoutes[IO] = {
         HttpRoutes.of[IO] {
             ///////////////////////// CRUD /////////////////////////////
@@ -89,8 +86,8 @@ object User {
                 getUserById(id, xa).flatMap { 
                     userOption => 
                         userOption match {
-                        case Some((id, username, password)) => 
-                            Ok((id, username, password).asJson)
+                        case Some((id, username, password, email)) => 
+                            Ok((id, username, password, email).asJson)
 
                         case None =>
                             NotFound(s"No user with ID : $id")
@@ -109,23 +106,12 @@ object User {
                     Ok(users.asJson)
                 }
 
-            // Pour mettre un String dans une route
-            case GET -> Root / "hello" / name =>
-                Ok(s"Hello, $name.")
-
-            
-            // Pour tester : 
-            // curl -X POST http://localhost:8080/users/echo -d test
-            // https://http4s.org/v1/docs/server-middleware.html
-            case r @ POST -> Root / "echo" => 
-                r.as[String].flatMap(Ok(_))
-
-
 
             // Route pour create User
             case r @ POST -> Root / "create" =>
                 r.as[UserInput].attempt.flatMap {
                     case Right(user: UserInput) =>
+                        // rajouter un test pour si email non nul ?
                         if (user.name.nonEmpty) {
                             addUser(user, xa).flatMap { result =>
                                 Ok(s"rows affected : $result")
@@ -135,7 +121,7 @@ object User {
                             BadRequest("Name must be longer")
                         }
                     case Left(_) =>
-                        BadRequest("Error format {name: String, password: String, isAdmin: Boolean}")
+                        BadRequest("Error format {name: String, password: String, email: String}")
                 }
 
             // Mettre à jour un user. C'est en gros le même principe que pour l'ajout à part qu'on check si le user existe avant
@@ -145,6 +131,7 @@ object User {
                         case Some(user) => 
                             r.as[UserInput].attempt.flatMap {
                                 case Right(user) => 
+                                    // ajouter le meme test pour email ?
                                     if(user.name.nonEmpty) {
                                         updateUser(id, user, xa).flatMap { result =>
                                             Ok(s"Rows affected : $result")
@@ -154,7 +141,7 @@ object User {
                                     }
                                 
                                 case Left(_) =>
-                                    BadRequest("Bad request. Format : {name: String, password: String, isAdmin: Boolean}")
+                                    BadRequest("Bad request. Format : {name: String, password: String, email: String}")
                             }
 
                         case None => 
@@ -182,12 +169,9 @@ object User {
                 }
 
             
-            // Route not found à laisser
+            // Route not found à laisser en dernier pour pas qu'elle prenne le dessus sur les autres
             case GET -> Root / _ =>
                 NotFound("User Route Not Found")
             }
         }
-    // https://http4s.org/v1/docs/json.html#a-hello-world-service
-    // app avec nos routes 
-    // val httpApp: HttpApp[IO] = userRoutes.orNotFound
 }

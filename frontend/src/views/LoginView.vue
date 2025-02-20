@@ -1,13 +1,17 @@
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 
-const username = ref('');
+const router = useRouter();
+
+const email = ref('');
 const password = ref('');
+
 
 const login = async () => {
 
     const userInput = {
-        username: username.value,
+        email: email.value,
         password: password.value
     };
 
@@ -51,8 +55,8 @@ const login = async () => {
 
         <form @submit.prevent="login" class="space-y-4">
             <div>
-                <label for="username" class="block text-sm font-medium text-gray-300">Nom d'utilisateur</label>
-                <input v-model="username" type="text" id="username"
+                <label for="email" class="block text-sm font-medium text-gray-300">Email</label>
+                <input v-model="email" type="email" id="email"
                     class="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                     required>
             </div>

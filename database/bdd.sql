@@ -1,3 +1,8 @@
+-- DROP DATABASE IF EXISTS scala_discord;
+-- CREATE DATABASE scala_discord;
+-- USE scala_discord;
+-- si on fait ça faudra changer le DATABASE.scala pour remplacer default par scala_discord
+
 CREATE TABLE IF NOT EXISTS User (
     user_id UUID DEFAULT generateUUIDv4(),
     username String,

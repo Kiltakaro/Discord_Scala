@@ -18,39 +18,11 @@ import scala.util.{Success, Failure}
 
 
 import java.time.Instant
-// METALS HURLE ICI WTF
-// ALORS QUE TOUT MARCHE 
 import pdi.jwt.{JwtAlgorithm, JwtCirce, JwtClaim}
 import io.circe.Json
 
 
-
-// PREUVE
-// sbt "runMain Authentification"
-// [info] welcome to sbt 1.10.7 (Ubuntu Java 21.0.6)
-// [info] loading settings for project mini-discord-build-build from metals.sbt...
-// [info] loading project definition from /home/Tanny/mini-discord/project/project
-// [info] loading settings for project mini-discord-build from metals.sbt...
-// [info] loading project definition from /home/Tanny/mini-discord/project
-// [success] Generated .bloop/mini-discord-build.json
-// [success] Total time: 2 s, completed Feb 12, 2025, 12:11:11 AM
-// [info] loading settings for project mini-discord from build.sbt...
-// [info] set current project to hello-world (in build file:/home/Tanny/mini-discord/)
-// [info] compiling 1 Scala source to /home/Tanny/mini-discord/target/scala-3.3.1/classes ...
-// [info] running Authentification 
-// Token généré : eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MzkzMjI2NzcsImlhdCI6MTczOTMxOTA3N30.-vZmM62IYxp4tq38fqRAo9xvYxvWnZei2UdWDBu9ACo
-// Token décodé : Success(JwtClaim({}, None, None, None, Some(1739322677), None, Some(1739319077), None))
-// Token décodé en JSON : Success({
-//   "exp" : 1739322677,
-//   "iat" : 1739319077
-// })
-// Token généré : eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MzkzMjI2NzcsImlhdCI6MTczOTMxOTA3N30.-vZmM62IYxp4tq38fqRAo9xvYxvWnZei2UdWDBu9ACo
-// Token décodé : Success(JwtClaim({}, None, None, None, Some(1739322677), None, Some(1739319077), None))
-// Token décodé en JSON : Success({
-//   "exp" : 1739322677,
-//   "iat" : 1739319077
-// })
-// [success] Total time: 5 s, completed Feb 12, 2025, 12:11:17 AM
+import at.favre.lib.crypto.bcrypt.BCrypt
 
 import User.addUser
 
@@ -126,16 +98,31 @@ object Authentification {
     // encrypter les passwords
     // la route fetch que le user en fonction de ses données donc elle login pas vraiment
     // A modifier pour Email psk en fait on peut avoir plusieurs usernames identiques
-    def loginUser(username: String, password: String, xa: Transactor[IO]): IO[Option[UUID]] = {
-        sql"SELECT user_id FROM User WHERE username = $username AND password = $password LIMIT 1"
-        .query[UUID]
+    def loginUser(email: String, password: String, xa: Transactor[IO]): IO[Option[UUID]] = {
+        
+        sql"SELECT user_id, password FROM User WHERE email = $email LIMIT 1"
+        .query[(UUID, String)]
         .option
         .transact(xa)
+        .map {
+            case Some((userId, hashedPassword)) =>
+                // https://github.com/patrickfav/bcrypt/issues/16#issuecomment-486187182
+                val passwordToCharArray = password.toCharArray
+                val isSamePassword = BCrypt.verifyer().verify(passwordToCharArray, hashedPassword).verified
+                if (isSamePassword) {
+                    Some(userId)
+                } else {
+                    None
+                }
+            case None => None
+        }
     }
 
     // encrypter le password
-    def registerUser(username: String, password: String, xa: Transactor[IO]): IO[Int] = {
-        val userInput = UserInput(username, password, isAdmin = false)
+    def registerUser(username: String, email: String, password: String, xa: Transactor[IO]): IO[Int] = {
+        val hashedPassword = BCrypt.withDefaults().hashToString(12, password.toCharArray)
+        println(s"Hashed password: $hashedPassword")
+        val userInput = UserInput(username, hashedPassword, email)
         addUser(userInput, xa)
     }
 
@@ -163,9 +150,10 @@ object Authentification {
                 r.as[Json].flatMap { json =>
                     
                     val username = json.hcursor.get[String]("username").getOrElse("")
+                    val email = json.hcursor.get[String]("email").getOrElse("")
                     val password = json.hcursor.get[String]("password").getOrElse("")
 
-                    registerUser(username, password, xa).flatMap { _ =>
+                    registerUser(username, email, password, xa).flatMap { _ =>
                         Ok(Json.obj("message" -> Json.fromString("User registered successfully")))
                     }
                 }
@@ -173,10 +161,10 @@ object Authentification {
             case r @ POST -> Root / "login" =>
                 r.as[Json].flatMap { json =>
 
-                    val username = json.hcursor.get[String]("username").getOrElse("")
+                    val email = json.hcursor.get[String]("email").getOrElse("")
                     val password = json.hcursor.get[String]("password").getOrElse("")
 
-                    loginUser(username, password, xa).flatMap {
+                    loginUser(email, password, xa).flatMap {
                         case Some(userUUID) =>
                             val token = generateToken(userUUID)
                             Ok(Json.obj("message" -> Json.fromString("User connected"), "token" -> Json.fromString(token)))
