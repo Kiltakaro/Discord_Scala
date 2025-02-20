@@ -11,16 +11,12 @@ const password = ref('');
 
 const register = async () => {
 
-
-    // rajoputer email plus tard
     const userInput = {
         username: username.value,
         email: email.value,
         password: password.value
     };
 
-    console.log(userInput);
-    console.log(JSON.stringify(userInput));
 
     try {
         const response = await fetch('http://localhost:8080/auth/register', {
@@ -31,13 +27,13 @@ const register = async () => {
             body: JSON.stringify(userInput)
         });
 
-        console.log(response);
-
         if (!response.ok) {
             const error = await response.json();
             console.log(error);
             return;
         }
+        
+        // register ok => go se login
         router.push('/login');
 
     } catch (error) {

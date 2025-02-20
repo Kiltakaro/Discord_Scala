@@ -15,8 +15,6 @@ const login = async () => {
         password: password.value
     };
 
-    console.log(userInput);
-    console.log(JSON.stringify(userInput));
 
     try {
         const response = await fetch('http://localhost:8080/auth/login', {
@@ -29,17 +27,19 @@ const login = async () => {
 
         console.log(response);
 
+        // Connexion failed
         if (!response.ok) {
             const error = await response.json();
             console.log(error);
             return;
         }
 
-        // Connexion réussie
+        // Connexion réussie => on garde des infos en local
         const data = await response.json();
         if (data.token) {
             localStorage.setItem('token', data.token);
-            router.push('/');
+            localStorage.setItem('email', email.value); // 
+            router.push('/searchfriend');
         }
 
     } catch (error) {

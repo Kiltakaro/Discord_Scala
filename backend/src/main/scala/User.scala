@@ -18,9 +18,9 @@ import doobie.util.meta.Meta
 // import com.github.t3hnar.bcrypt._
 // import scala.util.{Success, Failure}
 
-case class User(id: UUID, name: String, password: String, email: String)
+case class UserOutput(id: UUID, username: String)
 
-case class UserInput(name: String, password: String, email: String)
+case class UserInput(username: String, password: String, email: String)
 
 object User {
     implicit val uuidMeta: Meta[UUID] = Meta[String].imap[UUID](UUID.fromString)(_.toString)
@@ -35,7 +35,7 @@ object User {
         val insertUser =
         sql"""
             INSERT INTO User (username, password, email)
-            VALUES (${user.name}, $hashedPassword, ${user.email})
+            VALUES (${user.username}, $hashedPassword, ${user.email})
         """.update.run
         insertUser.transact(xa)
     }
@@ -49,11 +49,13 @@ object User {
 
     // Ici je fais en sorte que la bdd renvoie tous les users qui ont leur username qui commence par <username>
     // Ce sera plus pratique si on veut faire une barre de recherche
-    def getUsersByUsername(username: String, xa: Transactor[IO]): IO[List[User]] = {
+    def getUsersByUsername(username: String, xa: Transactor[IO]): IO[List[UserOutput]] = {
         sql"""
-            SELECT * FROM User
+            SELECT user_id, username FROM User
             WHERE startsWith(username, $username)
-        """.query[User].to[List].transact(xa)
+            LIMIT 10
+        """.query[UserOutput].to[List].transact(xa)
+        // On va eviter de renvoyer le mot de passe aux utilisateurs ^^
     }
 
     def getGuilds(id: UUID, xa: Transactor[IO]): IO[List[UUID]] = {
@@ -78,7 +80,7 @@ object User {
      }
 
      def updateUser(id: UUID, user: UserInput, xa: Transactor[IO]): IO[Int] = {
-        sql"ALTER TABLE User UPDATE username=${user.name}, password=${user.password}, email=${user.email} WHERE user_id = $id"
+        sql"ALTER TABLE User UPDATE username=${user.username}, password=${user.password}, email=${user.email} WHERE user_id = $id"
         .update
         .run
         .transact(xa)
@@ -127,16 +129,16 @@ object User {
                 r.as[UserInput].attempt.flatMap {
                     case Right(user: UserInput) =>
                         // rajouter un test pour si email non nul ?
-                        if (user.name.nonEmpty) {
+                        if (user.username.nonEmpty) {
                             addUser(user, xa).flatMap { result =>
                                 Ok(s"rows affected : $result")
                             }
                         }
                         else {
-                            BadRequest("Name must be longer")
+                            BadRequest("username must be longer")
                         }
                     case Left(_) =>
-                        BadRequest("Error format {name: String, password: String, email: String}")
+                        BadRequest("Error format {username: String, password: String, email: String}")
                 }
 
             // Mettre à jour un user. C'est en gros le même principe que pour l'ajout à part qu'on check si le user existe avant
@@ -147,7 +149,7 @@ object User {
                             r.as[UserInput].attempt.flatMap {
                                 case Right(user) => 
                                     // ajouter le meme test pour email ?
-                                    if(user.name.nonEmpty) {
+                                    if(user.username.nonEmpty) {
                                         updateUser(id, user, xa).flatMap { result =>
                                             Ok(s"Rows affected : $result")
                                         }
@@ -156,7 +158,7 @@ object User {
                                     }
                                 
                                 case Left(_) =>
-                                    BadRequest("Bad request. Format : {name: String, password: String, email: String}")
+                                    BadRequest("Bad request. Format : {username: String, password: String, email: String}")
                             }
 
                         case None => 
@@ -184,11 +186,7 @@ object User {
                 }
 
             
-            // Route not found à laisser en dernier pour pas qu'elle prenne le dessus sur les autres
-            // Pas sûr qu'elle soit nécessaire au final parce qu'on récupère des user en fonction de leur pseudo
-            // Donc n'importe quel string en paramètre renverra quelque chose
-            case GET -> Root / _ =>
-                NotFound("User Route Not Found")
-            }
+
         }
+    }
 }

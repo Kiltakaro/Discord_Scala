@@ -52,7 +52,7 @@ object Main extends IOApp {
             val corsConfig = CORSConfig.default
                 .withAnyOrigin(true)
                 .withAllowedMethods(Some(Set(Method.GET, Method.POST, Method.PUT, Method.DELETE)))
-                .withAllowedHeaders(Some(Set("Content-Type")))
+                .withAllowedHeaders(Some(Set("Content-Type", "Authorization")))
                 // .withAllowedHeaders(Some(Set("Accept", "Content-Type", "Origin", "X-Json", "X-Prototype-Version", "X-Requested-With")))
                 // .withAllowCredentials(true)
 
