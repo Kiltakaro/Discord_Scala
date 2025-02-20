@@ -35,7 +35,7 @@ object User {
         val insertUser =
         sql"""
             INSERT INTO User (username, password, email)
-            VALUES (${user.name}, ${hashedPassword}, ${user.email})
+            VALUES (${user.name}, $hashedPassword, ${user.email})
         """.update.run
         insertUser.transact(xa)
     }
@@ -45,6 +45,15 @@ object User {
         val query = sql"SELECT user_id, username, email, password FROM User".query[(UUID, String, String, String)]
         val queryToList: doobie.ConnectionIO[List[(UUID, String, String, String)]] = query.to[List]
         queryToList.transact(xa)
+    }
+
+    // Ici je fais en sorte que la bdd renvoie tous les users qui ont leur username qui commence par <username>
+    // Ce sera plus pratique si on veut faire une barre de recherche
+    def getUsersByUsername(username: String, xa: Transactor[IO]): IO[List[User]] = {
+        sql"""
+            SELECT * FROM User
+            WHERE startsWith(username, $username)
+        """.query[User].to[List].transact(xa)
     }
 
     def getGuilds(id: UUID, xa: Transactor[IO]): IO[List[UUID]] = {
@@ -92,6 +101,12 @@ object User {
                         case None =>
                             NotFound(s"No user with ID : $id")
                         }
+                }
+
+            // Recup tous les users en fonction de leur username
+            case GET -> Root / username =>
+                getUsersByUsername(username, xa).flatMap { users =>
+                    Ok(users.asJson)
                 }
 
             // Récup tous les serveurs d'un user (WIP je sais pas comment récup / utiliser un array clickhouse en scala)
@@ -170,6 +185,8 @@ object User {
 
             
             // Route not found à laisser en dernier pour pas qu'elle prenne le dessus sur les autres
+            // Pas sûr qu'elle soit nécessaire au final parce qu'on récupère des user en fonction de leur pseudo
+            // Donc n'importe quel string en paramètre renverra quelque chose
             case GET -> Root / _ =>
                 NotFound("User Route Not Found")
             }
