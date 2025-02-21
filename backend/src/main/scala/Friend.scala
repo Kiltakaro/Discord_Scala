@@ -52,9 +52,30 @@ object Friend {
         .transact(xa)
     }
 
+    def declineFriendRequest(friendRequestInput :FriendRequestInput, xa: Transactor[IO]): IO[Int] = {
+        // si on prend ça du point de vue de l'utilisation c'est assez chiant
+        // psk c'est forcément celui qui a reçu qui fait ce choix
+        // psk le friend c'est celui qui a envoyé la demande
+        // donc on inverse les roles, le userUUID est celui qui a reçu la demande
+        sql"""
+            DELETE FROM Friends WHERE 
+            user_id1 = ${friendRequestInput.friendUUID} AND user_id2 = ${friendRequestInput.userUUID}
+        """.update.run
+        .transact(xa)
+    }
+
+    def acceptFriendRequest(friendRequestInput: FriendRequestInput, xa: Transactor[IO]): IO[Int] = {
+        // meme commentaire que pour decline
+        sql"""
+            UPDATE Friends SET request_accepted = 1 WHERE 
+            user_id1 = ${friendRequestInput.friendUUID} AND user_id2 = ${friendRequestInput.userUUID}
+        """.update.run
+        .transact(xa)
+    }
 
     def friendRoutes(xa: Transactor[IO])= {
         HttpRoutes.of[IO] {
+
 
             case r @ POST -> Root / "add" =>
                 r.as[FriendRequestInput].attempt.flatMap {
@@ -69,12 +90,46 @@ object Friend {
                     case Left(_) =>
                         BadRequest("Bad Request. Format { userUUID: String, friendUUID: String }")
                     }
+                    
             
             // pour afficher les requests "en attente" et de qui elles viennent
             case GET -> Root / "requests" / UUIDVar(uuid) =>
                 getFriendRequestsUsernames(uuid, xa).flatMap { requests =>
                     Ok(requests.asJson)
                 }
+
+
+            // Refuse une friend request
+            // j'hésite a en faire une route DELETE  
+            // psk techniquement, ça fait supprimer un truc
+            case r @ POST -> Root / "decline" =>
+                r.as[FriendRequestInput].attempt.flatMap {
+                        case Right(friendInput) =>
+                            if (friendInput.userUUID.nonEmpty && friendInput.friendUUID.nonEmpty) {
+                                declineFriendRequest(friendInput, xa).flatMap { result =>
+                                    Ok(s"Rows affected: $result")
+                                }
+                            } else {
+                                BadRequest("IDs must not be empty")
+                            }
+                        case Left(_) =>
+                            BadRequest("Bad Request. Format { userUUID: String, friendUUID: String }")
+                    }
+
+
+            case r @ POST -> Root / "accept" =>
+                    r.as[FriendRequestInput].attempt.flatMap {
+                        case Right(friendInput) =>
+                            if (friendInput.userUUID.nonEmpty && friendInput.friendUUID.nonEmpty) {
+                                acceptFriendRequest(friendInput, xa).flatMap { result =>
+                                    Ok(s"Rows affected: $result")
+                                }
+                            } else {
+                                BadRequest("IDs must not be empty")
+                            }
+                        case Left(_) =>
+                            BadRequest("Bad Request. Format { userUUID: String, friendUUID: String }")
+                    }
 
         }
     }
