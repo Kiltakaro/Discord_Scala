@@ -6,6 +6,7 @@ import ServersPageView from '../views/ServersPageView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import FriendSearchView from '../views/FriendSearchView.vue'
 import FriendRequestView from '../views/FriendRequestView.vue'
+import FriendListView from '../views/FriendListView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -53,6 +54,11 @@ const router = createRouter({
       name: 'friendrequests',
       component: FriendRequestView,
     },
+    {
+      path: '/friends',
+      name: 'friends',
+      component: FriendListView,
+    }
     
   ],
 })

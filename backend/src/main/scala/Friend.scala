@@ -21,6 +21,7 @@ import java.time.Instant
 import pdi.jwt.{JwtAlgorithm, JwtCirce, JwtClaim}
 import io.circe.Json
 
+
 case class FriendRequestInput(userUUID : String, friendUUID: String)
 
 case class FriendRequestOutput(username: String, userUUID: String)
@@ -73,6 +74,40 @@ object Friend {
         .transact(xa)
     }
 
+    
+    def getFriends(userUUID: UUID, xa: Transactor[IO]): IO[List[FriendRequestOutput]] = {
+        // ça peut etre moi ou lui qui m'avait demandé en amis
+        // donc faut querry aux 2 id
+        
+        // pour des querry pareil, pour tester, utilisez 
+        // clickhouse-client
+        // j'en ai chié trop longtemps pour rien
+
+        // SELECT username, user_id2 FROM Friends
+        // JOIN User ON Friends.user_id2 = User.user_id
+        // WHERE user_id1 = $userUUID AND request_accepted = 1
+        // UNION
+        // SELECT username, user_id1 FROM Friends
+        // JOIN User ON Friends.user_id1 = User.user_id
+        // WHERE user_id2 = $userUUID AND request_accepted = 1
+
+        sql"""
+        SELECT username, user_id2 FROM Friends 
+        INNER JOIN User ON Friends.user_id2 = User.user_id 
+        WHERE user_id1 =  $userUUID AND request_accepted = 1 
+
+        UNION ALL
+
+        SELECT username, user_id1 FROM Friends 
+        INNER JOIN User ON Friends.user_id1 = User.user_id 
+        WHERE user_id2 = $userUUID AND request_accepted = 1
+        """
+        .query[FriendRequestOutput]
+        .to[List]
+        .transact(xa)
+    }
+
+
     def friendRoutes(xa: Transactor[IO])= {
         HttpRoutes.of[IO] {
 
@@ -90,7 +125,7 @@ object Friend {
                     case Left(_) =>
                         BadRequest("Bad Request. Format { userUUID: String, friendUUID: String }")
                     }
-                    
+
             
             // pour afficher les requests "en attente" et de qui elles viennent
             case GET -> Root / "requests" / UUIDVar(uuid) =>
@@ -114,22 +149,28 @@ object Friend {
                             }
                         case Left(_) =>
                             BadRequest("Bad Request. Format { userUUID: String, friendUUID: String }")
-                    }
+                }
 
 
             case r @ POST -> Root / "accept" =>
-                    r.as[FriendRequestInput].attempt.flatMap {
-                        case Right(friendInput) =>
-                            if (friendInput.userUUID.nonEmpty && friendInput.friendUUID.nonEmpty) {
-                                acceptFriendRequest(friendInput, xa).flatMap { result =>
-                                    Ok(s"Rows affected: $result")
-                                }
-                            } else {
-                                BadRequest("IDs must not be empty")
+                r.as[FriendRequestInput].attempt.flatMap {
+                    case Right(friendInput) =>
+                        if (friendInput.userUUID.nonEmpty && friendInput.friendUUID.nonEmpty) {
+                            acceptFriendRequest(friendInput, xa).flatMap { result =>
+                                Ok(s"Rows affected: $result")
                             }
-                        case Left(_) =>
-                            BadRequest("Bad Request. Format { userUUID: String, friendUUID: String }")
-                    }
+                        } else {
+                            BadRequest("IDs must not be empty")
+                        }
+                    case Left(_) =>
+                        BadRequest("Bad Request. Format { userUUID: String, friendUUID: String }")
+                }
+
+
+            case GET -> Root / UUIDVar(uuid) =>
+                getFriends(uuid, xa).flatMap { friends =>
+                    Ok(friends.asJson)
+                }
 
         }
     }
