@@ -1,34 +1,65 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from 'vue';
 
+const fetchFriends = async () => {
+    try {
+        const response = await fetch(`http://localhost:8080/friends/${userUUID}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+    });
 
-//serveurs et mp de test
-const servers = ref([
-    { id: 1, name: "Serveur 1", icon: "/favicon.ico" },
-    { id: 2, name: "Serveur 2", icon: "/favicon.ico" },
-    { id: 3, name: "Serveur 3", icon: "/favicon.ico" },
-    { id: 4, name: "Serveur super genial", icon: "/favicon.ico" },
-    { id: 5, name: "Serveur avec un nom tres long pour voir si le truc explose pas", icon: "/favicon.ico" },
-    { id: 6, name: "👍", icon: "/favicon.ico" },
-]);
+        if (!response.ok) {
+            return;
+        }
 
-//Id temporaires mais a changer en fonction de si un mp = un serv pour la bdd
+        friends.value = await response.json();
+        console.log("Friends :", friends.value);
 
-const privateMessages = ref([
-    { id: 1, name: "Brice", icon: "/favicon.ico" },
-    { id: 2, name: "Yani", icon: "/favicon.ico" },
-    { id: 3, name: "Hugo", icon: "/favicon.ico" },
-    { id: 4, name: "Loan", icon: "/favicon.ico" },
-    { id: 5, name: "JB la malice", icon: "/favicon.ico" },
-    { id: 6, name: "", icon: "/favicon.ico" },
-    { id: 7, name: "a", icon: "/favicon.ico" },
-]);
-
-
-//A changer avec une redirection vers le serv soon
-const clickTest = (channel) => {
-    console.log(`${channel.name}`);
+    } catch (error) {
+        console.log(error);
+    }
 };
+
+
+const fetchGuilds = async () => {
+    try {
+        const response = await fetch(`http://localhost:8080/guilds/${userUUID}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+    });
+
+        if (!response.ok) {
+            return;
+        }
+
+        guilds.value = await response.json();
+        console.log("Guilds :", guilds.value);
+
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+
+//Je change des qu'on a les pages de chat
+const friendRedirect = (friend) => {
+    console.log(`redirect to ${friend.username}`);
+};
+
+const guildRedirect = (server) => {
+    console.log(`redirect to ${guilds.name}`);
+};
+
+onMounted(() => {
+    fetchFriends();
+    fetchGuilds();
+});
 </script>
 
 <template>
@@ -38,11 +69,11 @@ const clickTest = (channel) => {
         <div class="w-full max-w-lg mb-8">
             <h2 class="text-xl font-semibold mb-4 text-gray-300 text-center">Messages Privés</h2>
             <div class="flex flex-wrap justify-center gap-6">
-                <button v-for="messages in privateMessages" :key="messages.id" @click="clickTest(messages)"
+                <button v-for="friend in friends" :key="friend.userUUID" @click="friendRedirect(friend)"
                     class="flex flex-col items-center focus:outline-none">
                     <img :src="messages.icon"
                         class="w-16 h-16 rounded-full border-2 border-gray-700 hover:border-white transition">
-                    <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ messages.name }}</span>
+                    <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ friend.username }}</span>
                 </button>
             </div>
         </div>
@@ -50,11 +81,11 @@ const clickTest = (channel) => {
         <div class="w-full max-w-lg">
             <h2 class="text-xl font-semibold mb-4 text-gray-300 text-center">Serveurs</h2>
             <div class="flex flex-wrap justify-center gap-6">
-                <button v-for="server in servers" :key="server.id" @click="clickTest(server)"
+                <button v-for="guild in guild" :key="guild.id" @click="guildRedirect(guild)"
                     class="flex flex-col items-center focus:outline-none">
                     <img :src="server.icon"
                         class="w-16 h-16 rounded-full border-2 border-gray-700 hover:border-white transition">
-                    <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ server.name }}</span>
+                    <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ guild.name }}</span>
                 </button>
             </div>
         </div>
