@@ -123,7 +123,7 @@ object Guild {
 
     /////////////////////////// GUILD RELATIONS ///////////////////////////
 
-    // // Users
+    // Users
     def addUserToGuild(userId: UUID, guildId: UUID, xa: Transactor[IO]): IO[Int] = {
         val addUser = sql"INSERT INTO User_Guild (user_id, guild_id) VALUES ($userId, $guildId)"
         .update
@@ -185,6 +185,56 @@ object Guild {
         .transact(xa)
     }
 
+
+    //////////////////////// GUILD INVITES //////////////////////////
+    // Version avec des liens d'invitations (pour plus tard quand on aura la messagerie qui fonctionne)
+
+    def generateInviteCode(): String = {
+        val randomBytes = new Arrayrate a short 6-byte random string
+        Random.nextBytes(randomBytes)
+        Base64.getUrlEncoder.withoutPadding().encodeToString(randomBytes)
+    }
+
+    def createGuildInvite(guildId: UUID, creatorId: UUID, maxUses: Int, xa: Transactor[IO]): IO[String] = {
+        val inviteCode = generateInviteCode()
+        val expirationTime = Instant.now().plusSeconds(3600) // valide une heure (je rajouterai le cas Unlimited plus tard)
+
+        sql"""
+            INSERT INTO Guild_Invites (invite_code, guild_id, creator_id, max_uses, expires_at)
+            VALUES ($inviteCode, $guildId, $creatorId, $maxUses, $expirationTime)
+        """.update.run.transact(xa).map(_ => inviteCode)
+    }
+
+    def getInvite(inviteCode: String, xa: Transactor[IO]): IO[Option[(UUID, Int, Int, Instant)]] = {
+        sql"""
+            SELECT guild_id, max_uses, uses, expires_at 
+            FROM Guild_Invites 
+            WHERE invite_code = $inviteCode
+        """.query[(UUID, Int, Int, Instant)].option.transact(xa)
+    }
+
+    def joinGuildUsingInvite(inviteCode: String, userId: UUID, xa: Transactor[IO]): IO[Either[String, String]] = {
+        getInvite(inviteCode, xa).flatMap {
+            case Some((guildId, maxUses, uses, expiresAt)) =>
+                val now = Instant.now()
+                if (now.isAfter(expiresAt)) {
+                    IO.pure(Left("Invite expired"))
+                } else if (maxUses > 0 && uses >= maxUses) {
+                    IO.pure(Left("Invite unavailable"))
+                } else {
+                    sql"""
+                        UPDATE Guild_Invites SET uses = uses + 1 WHERE invite_code = $inviteCode
+                    """.update.run.transact(xa) *>
+
+                    // Insert à remplacer par addUserToGuild() une fois testé
+                    sql"""
+                        INSERT INTO User_Guild (user_id, guild_id) VALUES ($userId, $guildId)
+                    """.update.run.transact(xa).map(_ => Right("Successfully joined the guild"))
+                }
+            
+            case None => IO.pure(Left("Invalid invite code"))
+        }
+    }
 
     /////////////////////////// GUILD ROUTES ///////////////////////////
 

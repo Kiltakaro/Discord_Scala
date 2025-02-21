@@ -60,6 +60,16 @@ CREATE TABLE IF NOT EXISTS User_Guild (
 ) ENGINE = MergeTree
 ORDER BY user_id;
 
+-- CREATE TABLE IF NOT EXISTS Guild_Invites (
+--     invite_code String,
+--     guild_id UUID,
+--     creator_id UUID,
+--     max_uses UInt8, -- 0 = Usage illimité
+--     uses UInt8 DEFAULT 0, -- Compteur d'utilisation
+--     expires_at DateTime DEFAULT (now() + INTERVAL 1 HOUR)
+-- ) ENGINE = MergeTree
+-- ORDER BY invite_code;
+
 CREATE TABLE IF NOT EXISTS Guild_Ban (
     user_id UUID,
     guild_id UUID
