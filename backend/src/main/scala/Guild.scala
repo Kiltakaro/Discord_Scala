@@ -22,6 +22,8 @@ case class Guild(guild_name: String)
 // pourquoi s'embeter avec ça, j'ai pas l'impression que ce soit super utile ici
 case class GuildInput(guild_name: String, owner_id : UUID)
 
+case class GuildInviteInput(userUUID: String, guildUUID: String)
+case class GuildInviteOutput(guildUUID: String, guild_name: String)
 
 
 // https://rockthejvm.com/articles/learning-doobie-for-the-greater-good
@@ -142,6 +144,47 @@ object Guild {
         .run
         removeUser.transact(xa)
     }
+    
+    /////////////////////////// GUILD INVITES ///////////////////////////
+
+    // Literallement la meme chose que friends
+
+    def sendGuildInvite(guildInviteInput: GuildInviteInput, xa: Transactor[IO]): IO[Int] = {
+        val insertGuildInvite =
+        sql"""
+            INSERT INTO User_Guild (user_id, guild_id, invite_accepted)
+            VALUES (${guildInviteInput.userUUID}, ${guildInviteInput.guildUUID}, 0)
+        """.update.run
+        insertGuildInvite.transact(xa)
+    }
+
+    def getGuildInvitesGuildnames(userUUID: UUID, xa: Transactor[IO]): IO[List[(GuildInviteOutput)]] = {
+        sql"""
+            SELECT guild_id, guild_name FROM 
+            User_Guild JOIN Guild ON User_Guild.guild_id = Guild.guild_id
+            WHERE user_id = ${userUUID.toString} AND invite_accepted = 0
+        """
+        .query[GuildInviteOutput]
+        .to[List]
+        .transact(xa)
+    }
+
+    def declineGuildInvite(guildInviteInput :GuildInviteInput, xa: Transactor[IO]): IO[Int] = {
+        sql"""
+            DELETE FROM User_Guild WHERE 
+            user_id = ${guildInviteInput.userUUID} AND guild_id = ${guildInviteInput.guildUUID}
+        """.update.run
+        .transact(xa)
+    }
+
+    def acceptGuildInvite(guildInviteInput: GuildInviteInput, xa: Transactor[IO]): IO[Int] = {
+        sql"""
+            UPDATE User_Guild SET invite_accepted = 1 WHERE 
+            user_id = ${guildInviteInput.userUUID} AND user_id2 = ${guildInviteInput.guildUUID}
+        """.update.run
+        .transact(xa)
+    }
+
 
     /////////////////////////// GUILD ROUTES ///////////////////////////
 
@@ -196,9 +239,9 @@ object Guild {
             case GET -> Root / "guilds" / UUIDVar(uuid) =>
                 getGuildsByUser(uuid, xa).flatMap { guilds =>
                     Ok(guilds.asJson)
-                }   
+                }
 
-
+                
             
             // Récup tous les serveurs d'un user (WIP je sais pas comment récup / utiliser un array clickhouse en scala)
             case GET -> Root / UUIDVar(id) / "users" =>
@@ -229,9 +272,64 @@ object Guild {
                 }
 
             
-            // Route not found à laisser
-            case GET -> Root / _ =>
-                NotFound("Guild Route Not Found")
+            ///////////////////////////// GESTION DES INVITATIONS ///////////////////: 
+
+
+            case r @ POST -> Root / "invites" / "add" =>
+                r.as[GuildInviteInput].attempt.flatMap {
+                    case Right(guildInput) =>
+                        if (guildInput.userUUID.nonEmpty && guildInput.guildUUID.nonEmpty) {
+                            sendGuildInvite(guildInput, xa).flatMap { result =>
+                                Ok(s"Rows affected: $result")
+                            }
+                        } else {
+                            BadRequest("IDs must not be empty")
+                        }
+                    case Left(_) =>
+                        BadRequest("Bad Request. Format { userUUID: String, friendUUID: String }")
+                    }
+
+            
+            // pour afficher les requests "en attente" et de qui elles viennent
+            case GET -> Root / "invites" / UUIDVar(uuid) =>
+                getGuildInvitesGuildnames(uuid, xa).flatMap { invites =>
+                    Ok(invites.asJson)
+                }
+
+
+            // Refuse une friend request
+            // j'hésite a en faire une route DELETE  
+            // psk techniquement, ça fait supprimer un truc
+            case r @ POST -> Root / "invites" / "decline" =>
+                r.as[GuildInviteInput].attempt.flatMap {
+                        case Right(guildInput) =>
+                            if (guildInput.userUUID.nonEmpty && guildInput.guildUUID.nonEmpty) {
+                                declineGuildInvite(guildInput, xa).flatMap { result =>
+                                    Ok(s"Rows affected: $result")
+                                }
+                            } else {
+                                BadRequest("IDs must not be empty")
+                            }
+                        case Left(_) =>
+                            BadRequest("Bad Request. Format { userUUID: String, friendUUID: String }")
+                }
+
+
+            case r @ POST -> Root / "invites" / "accept" =>
+                r.as[GuildInviteInput].attempt.flatMap {
+                    case Right(guildInput) =>
+                        if (guildInput.userUUID.nonEmpty && guildInput.guildUUID.nonEmpty) {
+                            acceptGuildInvite(guildInput, xa).flatMap { result =>
+                                Ok(s"Rows affected: $result")
+                            }
+                        } else {
+                            BadRequest("IDs must not be empty")
+                        }
+                    case Left(_) =>
+                        BadRequest("Bad Request. Format { userUUID: String, friendUUID: String }")
+                }
+
+
             }
         }
 }

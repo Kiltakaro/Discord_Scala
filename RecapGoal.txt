@@ -10,19 +10,22 @@ Petit endroit pour recap ou on en est car je mis perds avec tous ces projets
     (quasi fini)
 - Inviting users to servers, allowing users to leave servers
     (XXXXXXXXXX)
-- Creating channels on servers, modifying channel’s information, removing them.
-    (XXXXXXXXXX)
-
-- Allow admin actions on servers : ban/kick users, delete message written by someone else
+- Allow admin actions on servers : ban/kick users
     (XXXXXXXXXX)
 
 --------------------- RENDU 2 --------------------
 
 ça a l'air tout petit comme ça mais non le kafka c'est long trust
 
+- Creating channels on servers, modifying channel’s information, removing them.
+    (XXXXXXXXXX)
+- Creating DM channel
+    (XXXXXXXXXX)
 - Post messages on channels, delete them, see messages of a channel.
     (XXXXXXXXXX)
 - Send private messages between users
+    (XXXXXXXXXX)
+- Allow admin actions on servers : delete message written by someone else
     (XXXXXXXXXX)
 
 ---------------------- RENDU 3 ---------------------------

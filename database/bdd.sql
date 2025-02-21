@@ -55,7 +55,8 @@ ORDER BY sent_at;
 
 CREATE TABLE IF NOT EXISTS User_Guild (
     user_id UUID,
-    guild_id UUID
+    guild_id UUID,
+    invite_accepted UInt8 DEFAULT 0
 ) ENGINE = MergeTree
 ORDER BY user_id;
 

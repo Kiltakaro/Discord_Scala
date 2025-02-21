@@ -5,7 +5,7 @@ import RegisterView from '../views/RegisterView.vue'
 import ServersPageView from '../views/ServersPageView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import FriendSearchView from '../views/FriendSearchView.vue'
-import FriendRequestView from '../views/FriendRequestView.vue'
+import InvitesView from '../views/InvitesView.vue'
 import FriendListView from '../views/FriendListView.vue'
 
 const router = createRouter({
@@ -50,9 +50,9 @@ const router = createRouter({
       component: FriendSearchView,
     },
     {
-      path: '/friendrequests',
-      name: 'friendrequests',
-      component: FriendRequestView,
+      path: '/invites',
+      name: 'invites',
+      component: InvitesView,
     },
     {
       path: '/friends',
