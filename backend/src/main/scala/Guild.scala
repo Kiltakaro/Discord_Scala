@@ -43,6 +43,20 @@ object Guild {
         insertGuild.transact(xa)
     }
 
+    // Crée une guilde et y ajoute son créateur
+    def createGuild(guildName: String, guildDescription: String, ownerId: UUID, xa: Transactor[IO]): IO[UUID] = {
+        val guildId = UUID.randomUUID()
+        for {
+            _ <- sql"""
+                INSERT INTO Guild (guild_id, guild_name, guild_description, owner_id, creation_date)
+                VALUES ($guildId, $guildName, $guildDescription, $ownerId, now())
+            """.update.run.transact(xa)
+            _ <- sql"""
+                INSERT INTO User_Guild (user_id, guild_id) VALUES ($ownerId, $guildId)
+            """.update.run.transact(xa)
+        } yield guildId
+    }
+
     // Récupère tous les Guild
     // faudra peut etre récup l'id OU le nom du owner
     def getAllGuilds(xa: Transactor[IO]): IO[List[(UUID, String)]] = {
@@ -145,9 +159,9 @@ object Guild {
         removeUser.transact(xa)
     }
     
-    /////////////////////////// GUILD INVITES ///////////////////////////
+    /////////////////////////// GUILD INVITES #1 ///////////////////////////
 
-    // Literallement la meme chose que friends
+    // Version individuelle : même système que les demandes d'ami
 
     def sendGuildInvite(guildInviteInput: GuildInviteInput, xa: Transactor[IO]): IO[Int] = {
         val insertGuildInvite =
@@ -186,55 +200,56 @@ object Guild {
     }
 
 
-    //////////////////////// GUILD INVITES //////////////////////////
-    // Version avec des liens d'invitations (pour plus tard quand on aura la messagerie qui fonctionne)
+    //////////////////////// GUILD INVITES #2 //////////////////////////
 
-    def generateInviteCode(): String = {
-        val randomBytes = new Arrayrate a short 6-byte random string
-        Random.nextBytes(randomBytes)
-        Base64.getUrlEncoder.withoutPadding().encodeToString(randomBytes)
-    }
+    // Version communautaire : avec des liens d'invitations (pour plus tard car nécessite la mise en place de la messagerie)
 
-    def createGuildInvite(guildId: UUID, creatorId: UUID, maxUses: Int, xa: Transactor[IO]): IO[String] = {
-        val inviteCode = generateInviteCode()
-        val expirationTime = Instant.now().plusSeconds(3600) // valide une heure (je rajouterai le cas Unlimited plus tard)
+    // def generateInviteCode(): String = {
+    //     val randomBytes = new Arrayrate a short 6-byte random string
+    //     Random.nextBytes(randomBytes)
+    //     Base64.getUrlEncoder.withoutPadding().encodeToString(randomBytes)
+    // }
 
-        sql"""
-            INSERT INTO Guild_Invites (invite_code, guild_id, creator_id, max_uses, expires_at)
-            VALUES ($inviteCode, $guildId, $creatorId, $maxUses, $expirationTime)
-        """.update.run.transact(xa).map(_ => inviteCode)
-    }
+    // def createGuildInvite(guildId: UUID, creatorId: UUID, maxUses: Int, xa: Transactor[IO]): IO[String] = {
+    //     val inviteCode = generateInviteCode()
+    //     val expirationTime = Instant.now().plusSeconds(3600) // valide une heure (je rajouterai le cas Unlimited plus tard)
 
-    def getInvite(inviteCode: String, xa: Transactor[IO]): IO[Option[(UUID, Int, Int, Instant)]] = {
-        sql"""
-            SELECT guild_id, max_uses, uses, expires_at 
-            FROM Guild_Invites 
-            WHERE invite_code = $inviteCode
-        """.query[(UUID, Int, Int, Instant)].option.transact(xa)
-    }
+    //     sql"""
+    //         INSERT INTO Guild_Invites (invite_code, guild_id, creator_id, max_uses, expires_at)
+    //         VALUES ($inviteCode, $guildId, $creatorId, $maxUses, $expirationTime)
+    //     """.update.run.transact(xa).map(_ => inviteCode)
+    // }
 
-    def joinGuildUsingInvite(inviteCode: String, userId: UUID, xa: Transactor[IO]): IO[Either[String, String]] = {
-        getInvite(inviteCode, xa).flatMap {
-            case Some((guildId, maxUses, uses, expiresAt)) =>
-                val now = Instant.now()
-                if (now.isAfter(expiresAt)) {
-                    IO.pure(Left("Invite expired"))
-                } else if (maxUses > 0 && uses >= maxUses) {
-                    IO.pure(Left("Invite unavailable"))
-                } else {
-                    sql"""
-                        UPDATE Guild_Invites SET uses = uses + 1 WHERE invite_code = $inviteCode
-                    """.update.run.transact(xa) *>
+    // def getInvite(inviteCode: String, xa: Transactor[IO]): IO[Option[(UUID, Int, Int, Instant)]] = {
+    //     sql"""
+    //         SELECT guild_id, max_uses, uses, expires_at 
+    //         FROM Guild_Invites 
+    //         WHERE invite_code = $inviteCode
+    //     """.query[(UUID, Int, Int, Instant)].option.transact(xa)
+    // }
 
-                    // Insert à remplacer par addUserToGuild() une fois testé
-                    sql"""
-                        INSERT INTO User_Guild (user_id, guild_id) VALUES ($userId, $guildId)
-                    """.update.run.transact(xa).map(_ => Right("Successfully joined the guild"))
-                }
+    // def joinGuildUsingInvite(inviteCode: String, userId: UUID, xa: Transactor[IO]): IO[Either[String, String]] = {
+    //     getInvite(inviteCode, xa).flatMap {
+    //         case Some((guildId, maxUses, uses, expiresAt)) =>
+    //             val now = Instant.now()
+    //             if (now.isAfter(expiresAt)) {
+    //                 IO.pure(Left("Invite expired"))
+    //             } else if (maxUses > 0 && uses >= maxUses) {
+    //                 IO.pure(Left("Invite unavailable"))
+    //             } else {
+    //                 sql"""
+    //                     UPDATE Guild_Invites SET uses = uses + 1 WHERE invite_code = $inviteCode
+    //                 """.update.run.transact(xa) *>
+
+    //                 // Insert à remplacer par addUserToGuild() une fois testé
+    //                 sql"""
+    //                     INSERT INTO User_Guild (user_id, guild_id) VALUES ($userId, $guildId)
+    //                 """.update.run.transact(xa).map(_ => Right("Successfully joined the guild"))
+    //             }
             
-            case None => IO.pure(Left("Invalid invite code"))
-        }
-    }
+    //         case None => IO.pure(Left("Invalid invite code"))
+    //     }
+    // }
 
     /////////////////////////// GUILD ROUTES ///////////////////////////
 
@@ -261,7 +276,21 @@ object Guild {
                     case Left(_) =>
                         BadRequest("Error format {guild_name: String, owner_id : UUID}")
                 }
+            // Version expérimentale
+            // case req @ POST -> Root / "create" =>
+            //     req.as[Json].flatMap { json =>
+            //         val guildName = json.hcursor.get[String]("guildName").getOrElse("")
+            //         val guildDescription = json.hcursor.get[String]("guildDescription").getOrElse("")
+            //         val ownerId = UUID.fromString(json.hcursor.get[String]("ownerId").getOrElse(""))
 
+            //         if (guildName.nonEmpty) {
+            //             createGuild(guildName, guildDescription, ownerId, xa).flatMap { guildId =>
+            //                 Ok(Json.obj("message" -> Json.fromString("Serveur créé !"), "guildId" -> Json.fromString(guildId.toString)))
+            //             }
+            //         } else {
+            //             BadRequest(Json.obj("error" -> Json.fromString("Le nom du serveur ne peut pas être vide.")))
+            //         }
+            //     }
 
             
             // READ

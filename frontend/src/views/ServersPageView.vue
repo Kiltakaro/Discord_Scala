@@ -87,6 +87,9 @@ onMounted(() => {
                         class="w-16 h-16 rounded-full border-2 border-gray-700 hover:border-white transition">
                     <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ guild.name }}</span>
                 </button>
+                <RouterLink to="/create-guild" class="mt-4 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg">
+                    Créer un serveur
+                </RouterLink>
             </div>
         </div>
     </div>
