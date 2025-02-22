@@ -67,8 +67,8 @@ const friendRedirect = (friend) => {
     console.log(`redirect to ${friend.username}`);
 };
 
-const guildRedirect = (server) => {
-    console.log(`redirect to ${guilds.name}`);
+const guildRedirect = (guild) => {
+    console.log(`redirect to ${guild.name}`);
 };
 
 onMounted(() => {
@@ -86,20 +86,17 @@ onMounted(() => {
             <div class="flex flex-wrap justify-center gap-6">
                 <button v-for="friend in friends" :key="friend.userUUID" @click="friendRedirect(friend)"
                     class="flex flex-col items-center focus:outline-none">
-                    <img :src="messages.icon"
-                        class="w-16 h-16 rounded-full border-2 border-gray-700 hover:border-white transition">
+                    <!-- <img :src="friend.icon" class="w-16 h-16 rounded-full border-2 border-gray-700 hover:border-white transition"> -->
                     <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ friend.username }}</span>
                 </button>
             </div>
         </div>
-
         <div class="w-full max-w-lg">
             <h2 class="text-xl font-semibold mb-4 text-gray-300 text-center">Serveurs</h2>
             <div class="flex flex-wrap justify-center gap-6">
                 <button v-for="guild in guilds" :key="guild.id" @click="guildRedirect(guild)"
                     class="flex flex-col items-center focus:outline-none">
-                    <img :src="server.icon"
-                        class="w-16 h-16 rounded-full border-2 border-gray-700 hover:border-white transition">
+                        <!--<img :src="guild.icon" class="w-16 h-16 rounded-full border-2 border-gray-700 hover:border-white transition">-->
                     <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ guild.name }}</span>
                 </button>
                 <RouterLink to="/create-guild" class="mt-4 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg">
