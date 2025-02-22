@@ -2,10 +2,11 @@
 import { useRouter } from "vue-router";
 
 const router = useRouter();
-const token = !!localStorage.getItem("token");
+const token = localStorage.getItem("token");
 
 const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("userUUID");
     router.push("/");
 };
 
@@ -31,6 +32,10 @@ const logout = () => {
 
                     <router-link to="/profile" class="hover:text-blue-400 font-bold transition" v-if="token">
                         Profil
+                    </router-link>
+
+                    <router-link to="/invites" class="hover:text-blue-400 font-bold transition" v-if="token">
+                        Invitations
                     </router-link>
                 </div>
             </div>

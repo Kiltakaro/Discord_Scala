@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 
 const friends = ref([]);
 const token = localStorage.getItem("token");
@@ -9,12 +10,12 @@ const userUUID = localStorage.getItem("userUUID");
 const fetchFriends = async () => {
     try {
         const response = await fetch(`http://localhost:8080/friends/${userUUID}`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-        },
-    });
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+        });
 
 
         if (!response.ok) {
@@ -45,8 +46,16 @@ onMounted(() => {
                 class="flex justify-between items-center p-2 border-b border-gray-700">
                 <span>{{ friend.username }}</span>
             </li>
-            <li v-if="friends.length === 0" class="text-gray-400 text-center p-2">Aucune ami, peut-être qu'un jour t'en auras
+            <li v-if="friends.length === 0" class="text-gray-400 text-center p-2">Aucun ami, peut-être qu'un jour t'en
+                auras
             </li>
         </ul>
+
+        <router-link to="/searchfriend" class="hover:text-blue-400 font-bold transition">
+            <button class="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg">Ajouter des
+                amis</button> 
+        </router-link>
+
     </div>
+
 </template>
