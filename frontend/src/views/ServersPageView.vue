@@ -26,7 +26,7 @@ const fetchFriends = async () => {
 
 const fetchGuilds = async () => {
     try {
-        const response = await fetch(`http://localhost:8080/guilds/${userUUID}`, {
+        const response = await fetch(`http://localhost:8080/users/guilds/${userUUID}`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
