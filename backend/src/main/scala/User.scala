@@ -24,6 +24,8 @@ case class UserOutput(uuid: UUID, username: String)
 
 case class UserInput(username: String, password: String, email: String)
 
+case class ChangePassword(newPassword: String, oldPassword: String)
+
 object User {
     implicit val uuidMeta: Meta[UUID] = Meta[String].imap[UUID](UUID.fromString)(_.toString)
 
@@ -81,14 +83,39 @@ object User {
         deleteUser.transact(xa)
      }
 
-     def updateUser(id: UUID, user: UserInput, xa: Transactor[IO]): IO[Int] = {
+    // un peu redondant avec la fonction de login mais bon
+    // en gros si une action demande de verifier le mdp, on a ça qui fait le boulot
+    def checkPasswords(id: UUID, oldPassword: String, xa: Transactor[IO]): IO[Boolean] = {
+        sql"SELECT password FROM User WHERE user_id = $id"
+        .query[String]
+        .option
+        .transact(xa)
+        .map {
+            case Some(hashedPassword) =>
+                val passwordToCharArray = oldPassword.toCharArray
+                BCrypt.verifyer().verify(passwordToCharArray, hashedPassword).verified
+            case None => false
+        }
+    }
+
+    /////////////////////////// UPDATES /////////////////////////////
+
+    def updateUser(id: UUID, user: UserInput, xa: Transactor[IO]): IO[Int] = {
 
         val hashedPassword = BCrypt.withDefaults().hashToString(12, user.password.toCharArray)
         sql"ALTER TABLE User UPDATE username=${user.username}, password=$hashedPassword, email=${user.email} WHERE user_id = $id"
         .update
         .run
         .transact(xa)
-     }
+    }
+
+    def changePassword(id: UUID, newPassword: String, xa: Transactor[IO]): IO[Int] = {
+        val hashedPassword = BCrypt.withDefaults().hashToString(12, newPassword.toCharArray)
+        sql"ALTER TABLE User UPDATE password=$hashedPassword WHERE user_id = $id"
+        .update
+        .run
+        .transact(xa)
+    }
 
 
     def userRoutes(xa: Transactor[IO]): HttpRoutes[IO] = {
@@ -145,6 +172,7 @@ object User {
                         BadRequest("Error format {username: String, password: String, email: String}")
                 }
 
+            //////////////// CHANGE TOUT 
             // Mettre à jour un user. C'est en gros le même principe que pour l'ajout à part qu'on check si le user existe avant
             case r @ PUT -> Root / UUIDVar(id) => 
                 getUserById(id, xa).flatMap { userOption =>
@@ -163,6 +191,37 @@ object User {
                                 
                                 case Left(_) =>
                                     BadRequest("Bad request. Format : {username: String, password: String, email: String}")
+                            }
+
+                        case None => 
+                            NotFound(s"Could not update user with id $id : not found")
+                    }
+                }
+
+
+            // Ne modifie que le password
+            case r @ PUT -> Root / UUIDVar(id) / "password" => 
+                getUserById(id, xa).flatMap { passwordsOption =>
+                    passwordsOption match { 
+                        case Some(passwords) => 
+                            r.as[ChangePassword].attempt.flatMap {
+                                case Right(passwords) => 
+                                    checkPasswords(id, passwords.oldPassword, xa).flatMap { isValid =>
+                                        if(isValid) {
+                                            if(passwords.newPassword.nonEmpty) {
+                                                changePassword(id, passwords.newPassword, xa).flatMap { result =>
+                                                    Ok(s"Rows affected : $result")
+                                                }
+                                            } else {
+                                                BadRequest("NewPassword must not be empty")
+                                            }
+                                        }
+                                        else {
+                                            BadRequest("Old password is incorrect")
+                                        }
+                                    }
+                                case Left(_) =>
+                                    BadRequest("Bad request. Format : {oldPassword: String, newPassword: String}")
                             }
 
                         case None => 

@@ -31,7 +31,6 @@ const updateUserDetails = async () => {
         return;
     }
 
-    // if (password == confirmPassword) 
 
     // oldPassword = oldPassword.value
     const userDetails = {
@@ -55,6 +54,8 @@ const updateUserDetails = async () => {
             return;
         }
 
+        alert("Informations modifiées !")
+
     } catch (error) {
         console.log(error);
     }
@@ -67,11 +68,43 @@ const changeName = () => {
     console.log(username.value);
 };
 
-//rajouter vérif entre les mots de passe 
-const changePassword = () => {
-    console.log("ancien mdp :", oldPassword.value);
-    console.log("nouveau mdp :", newPassword.value);
-    console.log("confirmation mdp :", confirmPassword.value);
+
+const changePassword = async () => {
+
+    if (!userUUID) {
+        return;
+    }
+
+    if (newPassword.value !== confirmPassword.value) {
+        alert("Les mots de passe ne correspondent pas !");
+        return;
+    }
+
+    const passwordChannges = {
+        oldPassword: oldPassword.value,
+        newPassword: newPassword.value,
+    }
+
+    try {
+        const response = await fetch(`http://localhost:8080/users/${userUUID}/password`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify(passwordChannges)
+        });
+
+        if (!response.ok) {
+            return;
+        }
+
+        alert("Mot de passe modifié !")
+
+    } catch (error) {
+        console.log(error);
+    }
+
 };
 
 // Rajouter de quoi voir les infos actuelles de l'utilisateur
@@ -118,9 +151,9 @@ const changePassword = () => {
             <input v-model="confirmPassword" type="password" placeholder="Confirmer le mot de passe"
                 class="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
 
-            <!-- <button @click="changePassword"
+            <button @click="changePassword"
                 class="mt-4 w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg">Changer le mot de
-                passe</button> -->
+                passe</button>
 
             <button @click="updateUserDetails"
                 class="mt-4 w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg">Enregistrer</button>
