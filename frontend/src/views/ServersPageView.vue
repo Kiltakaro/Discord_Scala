@@ -1,7 +1,17 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 
+const friends = ref([]);
+const guilds = ref([]);
+const token = localStorage.getItem("token");
+const userUUID = localStorage.getItem("userUUID");
+
 const fetchFriends = async () => {
+
+    if (!userUUID) {
+        return;
+    }
+
     try {
         const response = await fetch(`http://localhost:8080/friends/${userUUID}`, {
         method: "GET",
@@ -25,8 +35,13 @@ const fetchFriends = async () => {
 
 
 const fetchGuilds = async () => {
+
+    if (!userUUID) {
+        return;
+    }
+
     try {
-        const response = await fetch(`http://localhost:8080/users/guilds/${userUUID}`, {
+        const response = await fetch(`http://localhost:8080/users/${userUUID}/guilds`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -81,7 +96,7 @@ onMounted(() => {
         <div class="w-full max-w-lg">
             <h2 class="text-xl font-semibold mb-4 text-gray-300 text-center">Serveurs</h2>
             <div class="flex flex-wrap justify-center gap-6">
-                <button v-for="guild in guild" :key="guild.id" @click="guildRedirect(guild)"
+                <button v-for="guild in guilds" :key="guild.id" @click="guildRedirect(guild)"
                     class="flex flex-col items-center focus:outline-none">
                     <img :src="server.icon"
                         class="w-16 h-16 rounded-full border-2 border-gray-700 hover:border-white transition">

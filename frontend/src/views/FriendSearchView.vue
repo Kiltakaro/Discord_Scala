@@ -4,6 +4,8 @@ import { ref } from 'vue';
 const username = ref('');
 const users = ref([]);
 const token = localStorage.getItem("token");
+const userUUID = localStorage.getItem("userUUID");
+
 
 const searchUsers = async () => {
   // la liste des users ayant un nom similaire qui va se remplir
@@ -42,8 +44,6 @@ const searchUsers = async () => {
 // soit un truc qui est permanent avec une requete a l'api
 const addFriend = async (friendUUID) => {
 
-  const userUUID = localStorage.getItem("userUUID");
-
   if (!userUUID) {
     return;
   }
@@ -73,7 +73,7 @@ const addFriend = async (friendUUID) => {
       return;
     }
     alert("Demande d'ami envoyée !");
-    
+
 
   } catch (error) {
     console.log(error);
@@ -89,15 +89,15 @@ const addFriend = async (friendUUID) => {
     <input v-model="username" @input="searchUsers" type="text" placeholder="Recherchez un ami"
       class="px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
 
-    <ul class="w-full max-w-md bg-gray-600 rounded-lg p-4 mt-4">
-      <li v-for="user in users" :key="user.uuid" class="flex justify-between items-center p-2 border-b border-gray-700">
-        <span>{{ user.username }}</span>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 w-full max-w-4xl">
+      <div v-for="user in users" :key="user.uuid" class="bg-gray-800 p-6 rounded-lg shadow-md flex justify-between items-center">
+        <span class="text-xl font-bold">{{ user.username }}</span>
         <button @click="addFriend(user.uuid)"
-          class="px-4 py-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
+          class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
           Ajouter
         </button>
-      </li>
-      <li v-if="users.length === 0" class="text-gray-400 text-center p-2">Aucun utilisateur trouvé</li>
-    </ul>
+      </div>
+      <div v-if="users.length === 0" class="text-gray-400 text-center p-2 col-span-full">Aucun utilisateur trouvé</div>
+    </div>
   </div>
 </template>

@@ -3,7 +3,7 @@ Petit endroit pour recap ou on en est car je mis perds avec tous ces projets
 ---------------------- RENDU 1 ---------------------
 
 - Creating an account, deleting it, modifying account’s information.
-    (quasi fini)
+    (FINI)
 - Authentication & Authorization of users on servers.
     (FINI)
 - Creating a server, modifying its information, deleting it
@@ -19,7 +19,7 @@ Petit endroit pour recap ou on en est car je mis perds avec tous ces projets
 
 - Creating channels on servers, modifying channel’s information, removing them.
     (XXXXXXXXXX)
-- Creating DM channel
+- Creating DM channel, Supprimer un ami
     (XXXXXXXXXX)
 - Post messages on channels, delete them, see messages of a channel.
     (XXXXXXXXXX)

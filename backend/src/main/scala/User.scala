@@ -59,7 +59,6 @@ object User {
         sql"""
             SELECT user_id, username FROM User
             WHERE startsWith(username, $username)
-            LIMIT 9
         """.query[UserOutput].to[List].transact(xa)
         // On va eviter de renvoyer le mot de passe aux utilisateurs ^^
     }
@@ -69,6 +68,17 @@ object User {
           .query[UUID]
           .to[List]
         query.transact(xa)
+    }
+
+    def getGuilds2(userUUID: UUID, xa: Transactor[IO]): IO[List[(GuildInviteOutput)]]  = {
+        sql"""
+            SELECT guild_id, guild_name FROM 
+            User_Guild JOIN Guild ON User_Guild.guild_id = Guild.guild_id
+            WHERE user_id = ${userUUID.toString} AND invite_accepted = 1
+        """
+        .query[GuildInviteOutput]
+        .to[List]
+        .transact(xa)
     }
 
     def getUserById(id: UUID, xa: Transactor[IO]): IO[Option[(UUID, String, String, String)]]= {
@@ -159,8 +169,8 @@ object User {
                 }
 
             // Recup la liste des guilds d'un user
-            case GET -> Root / "guilds" / UUIDVar(uuid) =>
-                getGuilds(uuid, xa).flatMap { guilds =>
+            case GET -> Root / UUIDVar(uuid) / "guilds" =>
+                getGuilds2(uuid, xa).flatMap { guilds =>
                     Ok(guilds.asJson)
             } 
             
