@@ -14,6 +14,8 @@ import doobie.implicits._
 import javax.xml.crypto.Data
 import java.util.UUID
 import doobie.util.meta.Meta
+import io.circe.Json
+
 
 import at.favre.lib.crypto.bcrypt.BCrypt
 
@@ -112,6 +114,20 @@ object User {
     def changePassword(id: UUID, newPassword: String, xa: Transactor[IO]): IO[Int] = {
         val hashedPassword = BCrypt.withDefaults().hashToString(12, newPassword.toCharArray)
         sql"ALTER TABLE User UPDATE password=$hashedPassword WHERE user_id = $id"
+        .update
+        .run
+        .transact(xa)
+    }
+
+    def changeUsername(id: UUID, newUsername: String, xa: Transactor[IO]): IO[Int] = {
+        sql"ALTER TABLE User UPDATE username=$newUsername WHERE user_id = $id"
+        .update
+        .run
+        .transact(xa)
+    }
+
+    def changeEmail(id: UUID, newEmail: String, xa: Transactor[IO]): IO[Int] = {
+        sql"ALTER TABLE User UPDATE email=$newEmail WHERE user_id = $id"
         .update
         .run
         .transact(xa)
@@ -224,6 +240,46 @@ object User {
                                     BadRequest("Bad request. Format : {oldPassword: String, newPassword: String}")
                             }
 
+                        case None => 
+                            NotFound(s"Could not update user with id $id : not found")
+                    }
+                }
+
+            // Ne modifie que l'email
+            case r @ PUT -> Root / UUIDVar(id) / "email" => 
+                getUserById(id, xa).flatMap { emailOption =>
+                    emailOption match { 
+                        case Some(email) => 
+                            r.as[Json].flatMap { json =>
+                                val newEmail = json.hcursor.get[String]("email").getOrElse("")
+                                if(newEmail.nonEmpty) {
+                                    changeEmail(id, newEmail, xa).flatMap { result =>
+                                        Ok(s"Rows affected : $result")
+                                    }
+                                } else {
+                                    BadRequest("Email must not be empty")
+                                }
+                            }
+                        case None => 
+                            NotFound(s"Could not update user with id $id : not found")
+                    }
+                }
+            
+            // Ne modifie que le username
+            case r @ PUT -> Root / UUIDVar(id) / "username" => 
+                getUserById(id, xa).flatMap { usernameOption =>
+                    usernameOption match { 
+                        case Some(username) => 
+                            r.as[Json].flatMap { json =>
+                                val newUsername = json.hcursor.get[String]("username").getOrElse("")
+                                if(newUsername.nonEmpty) {
+                                    changeUsername(id, newUsername, xa).flatMap { result =>
+                                        Ok(s"Rows affected : $result")
+                                    }
+                                } else {
+                                    BadRequest("Username must not be empty")
+                                }
+                            }
                         case None => 
                             NotFound(s"Could not update user with id $id : not found")
                     }

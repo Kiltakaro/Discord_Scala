@@ -24,48 +24,66 @@ const changePfp = (event) => {
 };
 
 
-
-const updateUserDetails = async () => {
+const changeUsername = async () => {
 
     if (!userUUID) {
         return;
     }
 
-
-    // oldPassword = oldPassword.value
-    const userDetails = {
+    const usernameChanges = {
         username: username.value,
-        email: email.value,
-        password: newPassword.value,
     }
 
-
     try {
-        const response = await fetch(`http://localhost:8080/users/${userUUID}`, {
+        const response = await fetch(`http://localhost:8080/users/${userUUID}/username`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`,
             },
-            body: JSON.stringify(userDetails)
+            body: JSON.stringify(usernameChanges)
         });
 
         if (!response.ok) {
             return;
         }
 
-        alert("Informations modifiées !")
+        alert("Pseudo modifié !")
 
     } catch (error) {
         console.log(error);
     }
 };
 
+const changeEmail = async () => {
 
+    if (!userUUID) {
+        return;
+    }
 
-//console log juste pour check l'appel des fonctions
-const changeName = () => {
-    console.log(username.value);
+    const emailChanges = {
+        email: email.value,
+    }
+
+    try {
+        const response = await fetch(`http://localhost:8080/users/${userUUID}/email`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify(emailChanges)
+        });
+
+        if (!response.ok) {
+            return;
+        }
+
+        alert("Email modifié !")
+
+    } catch (error) {
+        console.log(error);
+    }
 };
 
 
@@ -125,8 +143,8 @@ const changePassword = async () => {
             <label class="block text-gray-300 mb-1">Changer de username</label>
             <input v-model="username" type="email" placeholder="Nouveau username"
                 class="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <!-- <button @click="changeName"
-                class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg">Enregistrer</button> -->
+            <button @click="changeUsername"
+                class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg">Enregistrer</button>
         </div>
 
 
@@ -134,8 +152,8 @@ const changePassword = async () => {
             <label class="block text-gray-300 mb-1">Changer de Email</label>
             <input v-model="email" type="text" placeholder="Nouvel Email"
                 class="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <!-- <button @click="changeEmail"
-                class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg">Enregistrer</button> -->
+            <button @click="changeEmail"
+                class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg">Enregistrer</button>
         </div>
 
         <div class="w-full max-w-md mb-4">
@@ -154,9 +172,6 @@ const changePassword = async () => {
             <button @click="changePassword"
                 class="mt-4 w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg">Changer le mot de
                 passe</button>
-
-            <button @click="updateUserDetails"
-                class="mt-4 w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg">Enregistrer</button>
         </div>
 
 
