@@ -1,8 +1,11 @@
 <script setup>
 import { ref } from "vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const profileImage = ref("/favicon.ico"); //faire une pdp de base comme discord
-const username = ref("kiffeur2Scala");
+const username = ref("");
 const email = ref("");
 const oldPassword = ref("");
 const newPassword = ref("");
@@ -125,6 +128,40 @@ const changePassword = async () => {
 
 };
 
+
+const deleteAccount = async () => {
+
+    if (!userUUID) {
+        return;
+    }
+
+    const confirmation = confirm("Êtes-vous sûr à 100% de vouloir supprimer votre compte ?");
+    if (!confirmation) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`http://localhost:8080/users/${userUUID}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            return;
+        }
+
+        alert("Compte Supprimé !")
+        localStorage.removeItem("token");
+        localStorage.removeItem("userUUID");
+        router.push('/login');
+
+    } catch (error) {
+        console.log(error);
+    }
+};
+
 // Rajouter de quoi voir les infos actuelles de l'utilisateur
 </script>
 
@@ -174,6 +211,10 @@ const changePassword = async () => {
                 passe</button>
         </div>
 
+        <div class="w-full max-w-md mb-4">
+            <button @click="deleteAccount"
+                class="mt-4 w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg">Supprimer le compte</button>
+        </div>
 
     </div>
 </template>

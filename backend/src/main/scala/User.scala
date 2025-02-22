@@ -83,7 +83,7 @@ object User {
         .update
         .run
         deleteUser.transact(xa)
-     }
+    }
 
     // un peu redondant avec la fonction de login mais bon
     // en gros si une action demande de verifier le mdp, on a ça qui fait le boulot

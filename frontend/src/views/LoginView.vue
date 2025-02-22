@@ -39,7 +39,7 @@ const login = async () => {
         if (data.token) {
             localStorage.setItem('token', data.token);
             localStorage.setItem('userUUID', data.userUUID);
-            router.push('/searchfriend');
+            router.push('/profile');
         }
 
     } catch (error) {
