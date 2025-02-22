@@ -120,8 +120,7 @@ object Authentification {
 
     // encrypter le password
     def registerUser(username: String, email: String, password: String, xa: Transactor[IO]): IO[Int] = {
-        val hashedPassword = BCrypt.withDefaults().hashToString(12, password.toCharArray)
-        val userInput = UserInput(username, hashedPassword, email)
+        val userInput = UserInput(username, password, email)
         addUser(userInput, xa)
     }
 

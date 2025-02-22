@@ -15,6 +15,8 @@ import javax.xml.crypto.Data
 import java.util.UUID
 import doobie.util.meta.Meta
 
+import at.favre.lib.crypto.bcrypt.BCrypt
+
 // import com.github.t3hnar.bcrypt._
 // import scala.util.{Success, Failure}
 
@@ -31,7 +33,7 @@ object User {
     // renommer en create plus tard (add on dirait que c'est pour rajouter dans la guild)
     def addUser(user: UserInput, xa: Transactor[IO]): IO[Int] = {
     
-        val hashedPassword = user.password
+        val hashedPassword = BCrypt.withDefaults().hashToString(12, user.password.toCharArray)
         val insertUser =
         sql"""
             INSERT INTO User (username, password, email)
@@ -80,7 +82,9 @@ object User {
      }
 
      def updateUser(id: UUID, user: UserInput, xa: Transactor[IO]): IO[Int] = {
-        sql"ALTER TABLE User UPDATE username=${user.username}, password=${user.password}, email=${user.email} WHERE user_id = $id"
+
+        val hashedPassword = BCrypt.withDefaults().hashToString(12, user.password.toCharArray)
+        sql"ALTER TABLE User UPDATE username=${user.username}, password=$hashedPassword, email=${user.email} WHERE user_id = $id"
         .update
         .run
         .transact(xa)

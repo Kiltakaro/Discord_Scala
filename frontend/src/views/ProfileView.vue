@@ -2,10 +2,13 @@
 import { ref } from "vue";
 
 const profileImage = ref("/favicon.ico"); //faire une pdp de base comme discord
-const pseudo = ref("kiffeur2Scala");
+const username = ref("kiffeur2Scala");
+const email = ref("");
 const oldPassword = ref("");
 const newPassword = ref("");
 const confirmPassword = ref("");
+const token = localStorage.getItem("token");
+const userUUID = localStorage.getItem("userUUID");
 
 
 //A supprimer si on décide de ne pas faire de pdp custom, ça dépend de la solution pour l'hébergement
@@ -21,9 +24,47 @@ const changePfp = (event) => {
 };
 
 
+
+const updateUserDetails = async () => {
+
+    if (!userUUID) {
+        return;
+    }
+
+    // if (password == confirmPassword) 
+
+    // oldPassword = oldPassword.value
+    const userDetails = {
+        username: username.value,
+        email: email.value,
+        password: newPassword.value,
+    }
+
+
+    try {
+        const response = await fetch(`http://localhost:8080/users/${userUUID}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify(userDetails)
+        });
+
+        if (!response.ok) {
+            return;
+        }
+
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+
+
 //console log juste pour check l'appel des fonctions
 const changeName = () => {
-    console.log(pseudo.value);
+    console.log(username.value);
 };
 
 //rajouter vérif entre les mots de passe 
@@ -32,11 +73,13 @@ const changePassword = () => {
     console.log("nouveau mdp :", newPassword.value);
     console.log("confirmation mdp :", confirmPassword.value);
 };
+
+// Rajouter de quoi voir les infos actuelles de l'utilisateur
 </script>
 
 <template>
     <div class="min-h-screen flex flex-col items-center bg-gray-900 text-white p-6">
-        <h1 class="text-3xl font-bold mb-6">Profil de {{ pseudo }}</h1>
+        <h1 class="text-3xl font-bold mb-6">Profil de {{ username }}</h1>
 
         <div class="flex flex-col items-center mb-6">
             <img :src="profileImage"
@@ -46,11 +89,20 @@ const changePassword = () => {
 
 
         <div class="w-full max-w-md mb-4">
-            <label class="block text-gray-300 mb-1">Changer de pseudo</label>
-            <input v-model="pseudo" type="text" placeholder="Nouveau pseudo"
+            <label class="block text-gray-300 mb-1">Changer de username</label>
+            <input v-model="username" type="email" placeholder="Nouveau username"
                 class="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button @click="changeName"
-                class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg">Enregistrer</button>
+            <!-- <button @click="changeName"
+                class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg">Enregistrer</button> -->
+        </div>
+
+
+        <div class="w-full max-w-md mb-4">
+            <label class="block text-gray-300 mb-1">Changer de Email</label>
+            <input v-model="email" type="text" placeholder="Nouvel Email"
+                class="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <!-- <button @click="changeEmail"
+                class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg">Enregistrer</button> -->
         </div>
 
         <div class="w-full max-w-md mb-4">
@@ -66,8 +118,14 @@ const changePassword = () => {
             <input v-model="confirmPassword" type="password" placeholder="Confirmer le mot de passe"
                 class="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
 
-            <button @click="changePassword"
-                class="mt-4 w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg">Changer le mot de passe</button>
+            <!-- <button @click="changePassword"
+                class="mt-4 w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg">Changer le mot de
+                passe</button> -->
+
+            <button @click="updateUserDetails"
+                class="mt-4 w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg">Enregistrer</button>
         </div>
+
+
     </div>
 </template>
