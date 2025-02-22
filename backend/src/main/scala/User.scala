@@ -111,11 +111,11 @@ object User {
                     Ok(users.asJson)
                 }
 
-            // Récup tous les serveurs d'un user (WIP je sais pas comment récup / utiliser un array clickhouse en scala)
-            case GET -> Root / UUIDVar(id) / "guilds" =>
-                getGuilds(id, xa).flatMap { guilds =>
+            // Recup la liste des guilds d'un user
+            case GET -> Root / "guilds" / UUIDVar(uuid) =>
+                getGuilds(uuid, xa).flatMap { guilds =>
                     Ok(guilds.asJson)
-                }
+            } 
             
             // Recup tous les user
             case GET -> Root =>

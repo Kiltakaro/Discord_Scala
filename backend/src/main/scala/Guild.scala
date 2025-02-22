@@ -72,11 +72,6 @@ object Guild {
         .transact(xa)
     }
 
-    def getGuildsByUser(userId: UUID, xa: Transactor[IO]): IO[List[(UUID, String)]] = {
-        sql"SELECT g.guild_id, g.guild_name FROM Guild g JOIN User_Guild ug ON g.guild_id = ug.guild_id WHERE ug.user_id = $userId"
-        .query[(UUID, String)].to[List].transact(xa)
-    }
-
 
     def deleteGuild(id: UUID, xa: Transactor[IO]): IO[Int] = {
         val deleteGuild = sql"DELETE FROM Guild WHERE guild_id = $id"
@@ -314,13 +309,6 @@ object Guild {
                     Ok(guilds.asJson)
                 }
 
-            // Recup la liste des guilds d'un user
-            case GET -> Root / "guilds" / UUIDVar(uuid) =>
-                getGuildsByUser(uuid, xa).flatMap { guilds =>
-                    Ok(guilds.asJson)
-                }
-
-                
             
             // Récup tous les serveurs d'un user (WIP je sais pas comment récup / utiliser un array clickhouse en scala)
             case GET -> Root / UUIDVar(id) / "users" =>
