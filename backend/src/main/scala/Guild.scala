@@ -192,6 +192,21 @@ object Guild {
         """.query[Int].unique.transact(xa)
     }
 
+    def getBannedUsers(guildId: UUID, xa: Transactor[IO]): IO[List[UserOutput]] = {
+        sql"""
+        SELECT User.user_id, User.username FROM User
+        JOIN Guild_Ban ON (Guild_Ban.user_id = User.user_id)
+        WHERE Guild_Ban.guild_id = $guildId
+        """.query[UserOutput].to[List].transact(xa)
+    }
+
+    def unbanUserFromGuild(userId: UUID, guildId: UUID, xa: Transactor[IO]): IO[Int] = {
+        sql"""
+        DELETE FROM Guild_Ban
+        WHERE (user_id = $userId) AND (guild_id = $guildId)
+        """.update.run.transact(xa)
+    }
+
     /////////////////////////// GUILD INVITES #1 ///////////////////////////
 
     // Version individuelle : même système que les demandes d'ami
@@ -462,6 +477,11 @@ object Guild {
                         BadRequest("Bad request. Format { user_id: String, guild_id: String }")
                 }
 
+            case GET -> Root / UUIDVar(guildId) / "bans" =>
+                getBannedUsers(guildId, xa).flatMap { banList =>
+                    Ok(banList.asJson)
+                }
+
             case GET -> Root / UUIDVar(guildId) / "ban" / UUIDVar(userId) =>
                 checkIfUserIsBanned(userId, guildId, xa).flatMap { result =>
                     result match {
@@ -471,6 +491,23 @@ object Guild {
                         case _ => // L'utilisateur a été banni du serveur : pas d'envoi d'invitation
                             Forbidden(s"Forbidden action : user has been banned from this guild")
                     }
+                }
+
+            case r @ DELETE -> Root / "unban" =>
+                r.as[GuildInviteInput].attempt.flatMap {
+                    case Right(input) =>
+                        unbanUserFromGuild(UUID.fromString(input.user_id), UUID.fromString(input.guild_id), xa).flatMap { result =>
+                            result match {
+                                case 0 => // Pas d'utilisateur débanni donc on l'a pas trouvé
+                                    NotFound("Guild or user not found")
+
+                                case _ => // L'utilisateur a bien été débanni
+                                    Ok(s"Rows affected : $result")
+                            }
+                        }
+
+                    case Left(_) =>
+                        BadRequest("Bad request. Format { user_id: String, guild_id: String")
                 }
         }
     }

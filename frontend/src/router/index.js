@@ -9,6 +9,7 @@ import FriendSearchView from '../views/FriendSearchView.vue'
 import InvitesView from '../views/InvitesView.vue'
 import FriendListView from '../views/FriendListView.vue'
 import CreateGuildView from '../views/CreateGuildView.vue'
+import BanListView from "@/views/BanListView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -41,16 +42,21 @@ const router = createRouter({
       name: 'serverList',
       component: ServersPageView,
     },
-    { 
-      path: '/create-guild', 
-      name: 'create-guild', 
+    {
+      path: '/create-guild',
+      name: 'create-guild',
       component: CreateGuildView,
     },
     {
       path: '/server/:id',
       name: 'server',
       component: ServerView,
-    },    
+    },
+    {
+      path: '/server/:id/bans',
+      name: 'server_bans',
+      component: BanListView
+    },
     {
       path: '/profile',
       name: 'profile',
@@ -71,7 +77,7 @@ const router = createRouter({
       name: 'friends',
       component: FriendListView,
     }
-    
+
   ],
 })
 

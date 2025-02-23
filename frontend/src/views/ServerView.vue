@@ -1,7 +1,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import {useRoute, useRouter} from 'vue-router';
 
+const router = useRouter();
 const route = useRoute();
 const guildId = ref(route.params.id);
 const guild = ref(null);
@@ -233,6 +234,10 @@ const kickUser = async (kicked_id) => {
     }
 }
 
+const banListRedirect = async (guild_id) => {
+    router.push(`/server/${guild_id}/bans`);
+};
+
 onMounted(() => {
     fetchGuild();
     fetchUsersInGuild();
@@ -299,6 +304,11 @@ onMounted(() => {
                         </div>
                     </li>
                 </ul>
+                <button v-if="owner"
+                    class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg"
+                    @click="banListRedirect(guildId)">
+                    Utilisateurs bannis
+                </button>
             </div>
         </div>
     </div>
