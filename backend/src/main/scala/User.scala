@@ -176,7 +176,7 @@ object User {
 
             // Recup la liste des guilds d'un user
             case GET -> Root / UUIDVar(id) / "guilds" =>
-                getGuilds(id, xa).flatMap { guilds =>
+                getGuilds2(id, xa).flatMap { guilds =>
                     Ok(guilds.asJson)
             } 
             

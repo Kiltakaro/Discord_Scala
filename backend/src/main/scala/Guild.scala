@@ -54,7 +54,7 @@ object Guild {
                 VALUES ($guildId, $guildName, $guildDescription, $ownerId, now())
             """.update.run.transact(xa)
             _ <- sql"""
-                INSERT INTO User_Guild (user_id, guild_id) VALUES ($ownerId, $guildId)
+                INSERT INTO User_Guild (user_id, guild_id, invite_accepted) VALUES ($ownerId, $guildId, 1)
             """.update.run.transact(xa)
         } yield guildId
     }
