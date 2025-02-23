@@ -2,10 +2,17 @@ import cats.effect.*
 import io.circe.generic.auto.*
 import io.circe.syntax.*
 import io.circe.Json
+import io.circe.parser._
+import pdi.jwt._
 import org.http4s.{dsl, *}
 import org.http4s.circe.*
 import org.http4s.dsl.io.*
 import org.http4s.circe.CirceEntityDecoder.*
+import org.http4s.headers.`WWW-Authenticate`
+import org.http4s.Challenge
+import cats.data.NonEmptyList
+import org.typelevel.ci.CIStringSyntax
+
 import cats.effect.IO
 // import cats.effect.concurrent.Ref
 import cats.implicits._
@@ -34,15 +41,6 @@ object Guild {
 
     //////////////////////// GUILD ITSELF //////////////////////////
 
-
-    def addGuild(guild: GuildInput, xa: Transactor[IO]): IO[Int] = {
-        val insertGuild =
-        sql"""
-            INSERT INTO Guild (guild_name, owner_id)
-            VALUES (${guild.guild_name}, ${guild.owner_id})
-        """.update.run
-        insertGuild.transact(xa)
-    }
 
     // Crée une guilde et y ajoute son créateur
     def createGuild(guildName: String, guildDescription: String, ownerId: UUID, xa: Transactor[IO]): IO[UUID] = {
@@ -73,13 +71,20 @@ object Guild {
         .transact(xa)
     }
 
-
     def deleteGuild(id: UUID, xa: Transactor[IO]): IO[Int] = {
-        val deleteGuild = sql"DELETE FROM Guild WHERE guild_id = $id"
-        .update
-        .run
-        deleteGuild.transact(xa)
-     }
+        for {
+            userRows <- sql"""
+                DELETE FROM User_Guild WHERE guild_id = $id
+            """.update.run.transact(xa)
+            _ <- sql"""
+                DELETE FROM Channels WHERE guild_id = $id
+            """.update.run.transact(xa)
+            _ <- sql"""
+                DELETE FROM Guild WHERE guild_id = $id
+            """.update.run.transact(xa)
+        } yield userRows
+    }
+
 
     /////////////////////////// GUILD ATTRIBUTS ///////////////////////////
 
@@ -134,6 +139,17 @@ object Guild {
     /////////////////////////// GUILD RELATIONS ///////////////////////////
 
     // Users
+
+    // Récupère l'ID de l'utilisateur connecté via son token JWT (pour l'instant ne fonctionne pas)
+    def getUserIdFromJWT(token: String): Option[UUID] = {
+        println(s"Received Token: $token")
+        JwtCirce.decode(token, "secretkey", Seq(JwtAlgorithm.HS256)).toOption.flatMap { decoded =>
+            parse(decoded.content).toOption.flatMap { json =>
+                json.hcursor.get[String]("user_id").toOption.map(UUID.fromString)
+            }
+        }  
+    }
+
     def addUserToGuild(userId: UUID, guildId: UUID, xa: Transactor[IO]): IO[Int] = {
         val addUser = sql"INSERT INTO User_Guild (user_id, guild_id) VALUES ($userId, $guildId)"
         .update
@@ -306,23 +322,7 @@ object Guild {
     def guildRoutes(xa: Transactor[IO])= {
         HttpRoutes.of[IO] {
             
-            // // CREATE
-            // case r @ POST -> Root / "create" =>
-            //     r.as[GuildInput].attempt.flatMap {
-            //         case Right(guild: GuildInput) =>
-            //             if (guild.guild_name.length > 0) {
-            //                 addGuild(guild, xa).flatMap { result =>
-            //                     Ok(s"rows affected : $result")
-            //                 }
-            //             }
-            //             else {
-            //                 BadRequest("Name must be longer")
-            //             }
-            //         case Left(_) =>
-            //             BadRequest("Error format {guild_name: String, owner_id : UUID}")
-            //     }
-
-            // Version expérimentale
+            // Création de guilde
             case req @ POST -> Root / "create" =>
                 req.as[Json].flatMap { json =>
                     val guildName = json.hcursor.get[String]("guildName").getOrElse("")
@@ -372,26 +372,50 @@ object Guild {
                     Ok(users.asJson)
                 }
             
-            // UPDATE ??
+            //// UPDATE ??
 
 
             //// DELETE
-            // Supprime une Guild
-            case DELETE -> Root / UUIDVar(id) =>
-                getGuildById(id, xa).flatMap {
-                    guildOption =>
-                        guildOption match {
 
-                            case Some(guild) => 
-                                deleteGuild(id, xa).flatMap {
-                                    result =>
-                                        Ok(s"Affected rows : $result")
+            // Version sans vérification de l'ownership
+            // case DELETE -> Root / UUIDVar(id) =>
+            //     getGuildById(id, xa).flatMap {
+            //         guildOption =>
+            //             guildOption match {
+            //                 case Some(guild) => 
+            //                     deleteGuild(id, xa).flatMap {
+            //                         result =>
+            //                             Ok(s"Users removed : $result")
+            //                     }
+            //                 case None => 
+            //                     NotFound(s"Couldn't delete Guild with id $id : not found")
+            //             }
+            //     }
+            
+            // Suppression de guilde après vérification de l'ownership (WIP, ne reconnait pas encore l'owner de la guilde)
+            case req @ DELETE -> Root / UUIDVar(guildId) =>
+                req.headers.get(ci"Authorization").map(_.head) match {
+                    case Some(authHeader) =>
+                        val token = authHeader.value.replace("Bearer ", "")
+                        getUserIdFromJWT(token) match {
+                            case Some(requestingUserId) =>
+                                getGuildById(guildId, xa).flatMap {
+                                    case Some((_, _, _, ownerId)) if ownerId == requestingUserId =>
+                                        deleteGuild(guildId, xa).flatMap { result =>
+                                            Ok(Json.obj("message" -> Json.fromString("Guild deleted"), "rows_deleted" -> Json.fromInt(result)))
+                                        }
+                                    case Some(_) =>
+                                        Forbidden(Json.obj("error" -> Json.fromString("You are not the owner of this guild")))
+                                    case None =>
+                                        NotFound(Json.obj("error" -> Json.fromString("Guild not found")))
                                 }
-
-                            case None => 
-                                NotFound(s"Couldn't delete Guild with id $id : not found")
+                            case None =>
+                                // C'est pas le bon code de retour mais IMPOSSIBLE de faire fonctionner Unauthorized (skill issue)
+                                Forbidden(Json.obj("error" -> Json.fromString("Invalid token")))
                         }
-
+                    // Même problème ici
+                    case None =>
+                        Forbidden(Json.obj("error" -> Json.fromString("Authorization header missing")))
                 }
 
 

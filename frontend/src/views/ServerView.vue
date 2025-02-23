@@ -234,6 +234,32 @@ const kickUser = async (kicked_id) => {
     }
 }
 
+const deleteGuild = async () => {
+    try {
+        const response = await fetch(`http://localhost:8080/guilds/${guildId.value}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+        });
+
+        if (response.status === 403) {
+            alert("Vous n'êtes pas propriétaire de ce serveur");
+            return;
+        }
+        if (!response.ok) {
+            throw new Error("Failed to delete the server");
+        }
+
+        alert("Serveur supprimé");
+        router.push("/serverList");
+    } catch (error) {
+        console.error(error);
+        alert("Erreur lors de la suppression");
+    }
+};
+
 const banListRedirect = async (guild_id) => {
     router.push(`/server/${guild_id}/bans`);
 };
@@ -267,10 +293,10 @@ onMounted(() => {
                         class="px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 w-full max-w-4xl">
-                        <div v-for="user in users" :key="user.uuid"
+                        <div v-for="user in users" :key="user.user_id"
                             class="bg-gray-800 p-6 rounded-lg shadow-md flex justify-between items-center">
                             <span class="text-xl font-bold">{{ user.username }}</span>
-                            <button @click="inviteUserToGuild(user.uuid)"
+                            <button @click="inviteUserToGuild(user.user_id)"
                                 class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
                                 Ajouter
                             </button>
@@ -286,18 +312,22 @@ onMounted(() => {
             <div
                 class="fixed right-0 top-2 bottom-0 w-64 bg-gray-800 p-4 border-l-4 border-gray-700 overflow-y-auto mt-16">
                 <h2 class="text-xl font-bold mb-4">Membres du serveur</h2>
+                <button v-if="owner" @click="deleteGuild"
+                    class="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg">
+                    Supprimer le serveur
+                </button>
                 <ul>
-                    <li v-for="user_of_guild in users_in_guild" :key="user_of_guild.uuid"
+                    <li v-for="user in users_in_guild" :key="user.user_id"
                         class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700">
-                        <span class="flex-1">{{ user_of_guild.username }}</span>
+                        <span class="flex-1">{{ user.username }}</span>
 
                         <!-- Visible que pour l'admin + empêche l'admin de se ban / kick lui-même -->
-                        <div v-if="owner && user_id !== user_of_guild.uuid" class="flex space-x-2">
-                            <button @click="kickUser(user_of_guild.uuid)"
+                        <div v-if="owner && user_id !== user.uuid" class="flex space-x-2">
+                            <button @click="kickUser(user.user_id)"
                                 class="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg">
                                 Kick
                             </button>
-                            <button @click="banUser(user_of_guild.uuid)"
+                            <button @click="banUser(user.user_id)"
                                 class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg">
                                 Ban
                             </button>
