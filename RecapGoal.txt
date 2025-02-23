@@ -9,7 +9,7 @@ Petit endroit pour recap ou on en est car je mis perds avec tous ces projets
 - Creating a server, modifying its information, deleting it
     (quasi fini)
 - Inviting users to servers, allowing users to leave servers
-    (XXXXXXXXXX)
+    (quasi fini)
 - Allow admin actions on servers : ban/kick users
     (XXXXXXXXXX)
 

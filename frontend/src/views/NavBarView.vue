@@ -13,7 +13,7 @@ const logout = () => {
 </script>
 
 <template>
-    <nav class="bg-gray-800 text-white p-4 shadow-md">
+    <nav class="fixed inset-x-0 bg-gray-800 text-white p-4">
         <!-- Ne s'affiche que si on est login -->
         <div class="container mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-6">

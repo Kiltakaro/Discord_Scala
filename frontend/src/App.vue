@@ -5,7 +5,10 @@ import Navbar from './views/NavBarView.vue'
 
 <template>
   <Navbar />
-  <RouterView />
+  <!-- Pour eviter que la navbar se superpose avec des composants -->
+  <div class="pt-16">
+    <RouterView />
+  </div>
 </template>
 
 

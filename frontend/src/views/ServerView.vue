@@ -144,6 +144,40 @@ const fetchUsersInGuild = async () => {
     }
 };
 
+const banUser = async (banned_id) => {
+
+    if (!banned_id) {
+        return;
+    }
+
+    // Sur la route va falloir verifier que l'utilisateur est bien l'admin
+
+    try {
+
+        console.log("Banned id :", banned_id);
+
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+const kickUser = async (kicked_id) => {
+
+    // Sur la route va falloir verifier que l'utilisateur est bien l'admin
+
+    if (!kicked_id) {
+        return;
+    }
+
+    try {
+
+        console.log("Kicked id :", kicked_id);
+
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 onMounted(() => {
     fetchGuild();
     fetchUsersInGuild();
@@ -151,43 +185,66 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="min-h-screen flex flex-col items-center bg-gray-900 text-white p-6">
-        <h1 class="text-3xl font-bold mb-6">
-            Serveur: {{ guild?.guild_name || "Chargement..." }}
-        </h1>
-        <p>{{ guild?.guild_desc || "Aucune description disponible" }}</p>
-        <!-- <p>{{ guild?.owner_id || "Propriétaire inconnu" }}</p> -->
-        <p v-if="errorMessage" class="text-red-500">{{ errorMessage }}</p>
+    <div class="pr-64">
+        <div class="min-h-screen flex flex-col items-center bg-gray-900 text-white p-6">
+            <h1 class="text-3xl font-bold mb-6">
+                Serveur: {{ guild?.guild_name || "Chargement..." }}
+            </h1>
+            <p>{{ guild?.guild_desc || "Aucune description disponible" }}</p>
+            <p v-if="errorMessage" class="text-red-500">{{ errorMessage }}</p>
+            <p> Voici un texte hyper long pour tester si le padding right marche bien et si la barre d'utilisateurs ne
+                va pas passer par dessus le texte et le rendre illisible psk ça serait vraiment dommage de pas pouvoir
+                observer un tel message</p>
 
-        
 
-        <div v-if="owner" class="flex justify-center items-center">
-            <div class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white space-y-4">
-                <h1 class="text-4xl font-bold">Rechercher des personnes au serveur</h1>
+            <!-- Ajouter des utilisateurs (Réservé a l'admin du serveur) -->
+            <!-- Faudra trouver un moyen plus stylé de faire ça -->
+            <div v-if="owner" class="flex justify-center items-center">
+                <div class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white space-y-4">
+                    <h1 class="text-4xl font-bold">Rechercher des personnes au serveur</h1>
 
-                <input v-model="username" @input="searchUsers" type="text" placeholder="Recherchez un ami"
-                    class="px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <input v-model="username" @input="searchUsers" type="text" placeholder="Recherchez un ami"
+                        class="px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 w-full max-w-4xl">
-                    <div v-for="user in users" :key="user.uuid"
-                        class="bg-gray-800 p-6 rounded-lg shadow-md flex justify-between items-center">
-                        <span class="text-xl font-bold">{{ user.username }}</span>
-                        <button @click="inviteUserToGuild(user.uuid)"
-                            class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
-                            Ajouter
-                        </button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 w-full max-w-4xl">
+                        <div v-for="user in users" :key="user.uuid"
+                            class="bg-gray-800 p-6 rounded-lg shadow-md flex justify-between items-center">
+                            <span class="text-xl font-bold">{{ user.username }}</span>
+                            <button @click="inviteUserToGuild(user.uuid)"
+                                class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
+                                Ajouter
+                            </button>
+                        </div>
+                        <div v-if="users.length === 0" class="text-gray-400 text-center p-2 col-span-full">Aucun
+                            utilisateur
+                            trouvé</div>
                     </div>
-                    <div v-if="users.length === 0" class="text-gray-400 text-center p-2 col-span-full">Aucun utilisateur
-                        trouvé</div>
                 </div>
             </div>
-        </div>
 
-        <div class="flex flex-col items-start mt-8">
-            <h2 class="text-2xl font-bold mb-4">Utilisateurs dans le serveur :</h2>
-            <ul>
-                <li v-for="user_of_guild in users_in_guild" :key="user_of_guild.uuid">{{ user_of_guild.username }}</li>
-            </ul>
+            <!-- Liste des membres du serveur -->
+            <div
+                class="fixed right-0 top-2 bottom-0 w-64 bg-gray-800 p-4 border-l-4 border-gray-700 overflow-y-auto mt-16">
+                <h2 class="text-xl font-bold mb-4">Membres du serveur</h2>
+                <ul>
+                    <li v-for="user_of_guild in users_in_guild" :key="user_of_guild.uuid"
+                        class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700">
+                        <span class="flex-1">{{ user_of_guild.username }}</span>
+
+                        <!-- Visible que pour l'admin -->
+                        <div v-if="owner" class="flex space-x-2">
+                            <button @click="kickUser(user_of_guild.uuid)"
+                                class="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg">
+                                Kick
+                            </button>
+                            <button @click="banUser(user_of_guild.uuid)"
+                                class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg">
+                                Ban
+                            </button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 </template>
