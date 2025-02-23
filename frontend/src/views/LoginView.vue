@@ -39,7 +39,6 @@ const login = async () => {
         if (data.token) {
             localStorage.setItem('token', data.token);
             localStorage.setItem('user_id', data.user_id);
-            location.reload();
             router.push('/serverList');
         }
 

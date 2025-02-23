@@ -169,9 +169,28 @@ const kickUser = async (kicked_id) => {
         return;
     }
 
+    // rajouter un truc qui affiche le nom du user, peut etre
+    const confirmation = confirm("Êtes-vous sûr à 100% de vouloir l'expulser ?");
+    if (!confirmation) {
+        return;
+    }
+
     try {
 
-        console.log("Kicked id :", kicked_id);
+        const response = await fetch(`http://localhost:8080/guilds/${guildId.value}/kick/${kicked_id}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            return;
+        }
+
+        alert("Utilisateur expulsé du serveur");
+        fetchUsersInGuild();
 
     } catch (error) {
         console.log(error);

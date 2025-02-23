@@ -348,16 +348,29 @@ object Guild {
 
                 }
 
+
+            // kick un utilisateur
+            case POST -> Root / UUIDVar(guildid) / "kick" / UUIDVar(userId) =>
+                removeUserFromGuild(userId, guildid, xa).flatMap { result =>
+                    Ok(s"Rows affected: $result")
+                }
+
             
-            ///////////////////////////// GESTION DES INVITATIONS ///////////////////: 
+            ///////////////////////////// GESTION DES INVITATIONS ///////////////////
 
-
+            // RAJOUTER DES TESTS POUR VOIR SI LA GUILD EXISTE
+            
             case r @ POST -> Root / "invites" / "add" =>
                 r.as[GuildInviteInput].attempt.flatMap {
                     case Right(guildInput) =>
                         if (guildInput.user_id.nonEmpty && guildInput.guild_id.nonEmpty) {
-                            sendGuildInvite(guildInput, xa).flatMap { result =>
-                                Ok(s"Rows affected: $result")
+                            getGuildById(UUID.fromString(guildInput.guild_id), xa).flatMap {
+                                case Some(_) =>
+                                    sendGuildInvite(guildInput, xa).flatMap { result =>
+                                        Ok(s"Rows affected: $result")
+                                    }
+                                case None =>
+                                    BadRequest("Guild not found")
                             }
                         } else {
                             BadRequest("IDs must not be empty")

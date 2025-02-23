@@ -34,7 +34,6 @@ const register = async () => {
         }
         
         // register ok => go se login
-        location.reload();
         router.push('/login');
 
     } catch (error) {
