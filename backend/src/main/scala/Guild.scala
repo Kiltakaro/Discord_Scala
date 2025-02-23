@@ -24,8 +24,8 @@ case class Guild(guild_name: String)
 // pourquoi s'embeter avec ça, j'ai pas l'impression que ce soit super utile ici
 case class GuildInput(guild_name: String, owner_id : UUID)
 
-case class GuildInviteInput(userUUID: String, guildUUID: String)
-case class GuildInviteOutput(guildUUID: String, guild_name: String)
+case class GuildInviteInput(user_id: String, guild_id: String)
+case class GuildInviteOutput(guild_id: String, guild_name: String)
 
 
 // https://rockthejvm.com/articles/learning-doobie-for-the-greater-good
@@ -164,16 +164,16 @@ object Guild {
         val insertGuildInvite =
         sql"""
             INSERT INTO User_Guild (user_id, guild_id, invite_accepted)
-            VALUES (${guildInviteInput.userUUID}, ${guildInviteInput.guildUUID}, 0)
+            VALUES (${guildInviteInput.user_id}, ${guildInviteInput.guild_id}, 0)
         """.update.run
         insertGuildInvite.transact(xa)
     }
 
-    def getGuildInvitesGuildnames(userUUID: UUID, xa: Transactor[IO]): IO[List[(GuildInviteOutput)]] = {
+    def getGuildInvitesGuildnames(user_id: UUID, xa: Transactor[IO]): IO[List[(GuildInviteOutput)]] = {
         sql"""
             SELECT guild_id, guild_name FROM 
             User_Guild JOIN Guild ON User_Guild.guild_id = Guild.guild_id
-            WHERE user_id = ${userUUID.toString} AND invite_accepted = 0
+            WHERE user_id = ${user_id.toString} AND invite_accepted = 0
         """
         .query[GuildInviteOutput]
         .to[List]
@@ -183,7 +183,7 @@ object Guild {
     def declineGuildInvite(guildInviteInput :GuildInviteInput, xa: Transactor[IO]): IO[Int] = {
         sql"""
             DELETE FROM User_Guild WHERE 
-            user_id = ${guildInviteInput.userUUID} AND guild_id = ${guildInviteInput.guildUUID}
+            user_id = ${guildInviteInput.user_id} AND guild_id = ${guildInviteInput.guild_id}
         """.update.run
         .transact(xa)
     }
@@ -191,7 +191,7 @@ object Guild {
     def acceptGuildInvite(guildInviteInput: GuildInviteInput, xa: Transactor[IO]): IO[Int] = {
         sql"""
             UPDATE User_Guild SET invite_accepted = 1 WHERE 
-            user_id = ${guildInviteInput.userUUID} AND user_id2 = ${guildInviteInput.guildUUID}
+            user_id = ${guildInviteInput.user_id} AND user_id2 = ${guildInviteInput.guild_id}
         """.update.run
         .transact(xa)
     }
@@ -353,7 +353,7 @@ object Guild {
             case r @ POST -> Root / "invites" / "add" =>
                 r.as[GuildInviteInput].attempt.flatMap {
                     case Right(guildInput) =>
-                        if (guildInput.userUUID.nonEmpty && guildInput.guildUUID.nonEmpty) {
+                        if (guildInput.user_id.nonEmpty && guildInput.guild_id.nonEmpty) {
                             sendGuildInvite(guildInput, xa).flatMap { result =>
                                 Ok(s"Rows affected: $result")
                             }
@@ -361,7 +361,7 @@ object Guild {
                             BadRequest("IDs must not be empty")
                         }
                     case Left(_) =>
-                        BadRequest("Bad Request. Format { userUUID: String, friendUUID: String }")
+                        BadRequest("Bad Request. Format { user_id: String, friend_id: String }")
                     }
 
             
@@ -378,7 +378,7 @@ object Guild {
             case r @ POST -> Root / "invites" / "decline" =>
                 r.as[GuildInviteInput].attempt.flatMap {
                         case Right(guildInput) =>
-                            if (guildInput.userUUID.nonEmpty && guildInput.guildUUID.nonEmpty) {
+                            if (guildInput.user_id.nonEmpty && guildInput.guild_id.nonEmpty) {
                                 declineGuildInvite(guildInput, xa).flatMap { result =>
                                     Ok(s"Rows affected: $result")
                                 }
@@ -386,14 +386,14 @@ object Guild {
                                 BadRequest("IDs must not be empty")
                             }
                         case Left(_) =>
-                            BadRequest("Bad Request. Format { userUUID: String, friendUUID: String }")
+                            BadRequest("Bad Request. Format { user_id: String, friend_id: String }")
                 }
 
 
             case r @ POST -> Root / "invites" / "accept" =>
                 r.as[GuildInviteInput].attempt.flatMap {
                     case Right(guildInput) =>
-                        if (guildInput.userUUID.nonEmpty && guildInput.guildUUID.nonEmpty) {
+                        if (guildInput.user_id.nonEmpty && guildInput.guild_id.nonEmpty) {
                             acceptGuildInvite(guildInput, xa).flatMap { result =>
                                 Ok(s"Rows affected: $result")
                             }
@@ -401,7 +401,7 @@ object Guild {
                             BadRequest("IDs must not be empty")
                         }
                     case Left(_) =>
-                        BadRequest("Bad Request. Format { userUUID: String, friendUUID: String }")
+                        BadRequest("Bad Request. Format { user_id: String, friend_id: String }")
                 }
 
 

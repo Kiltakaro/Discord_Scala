@@ -4,7 +4,7 @@ import { ref } from 'vue';
 const username = ref('');
 const users = ref([]);
 const token = localStorage.getItem("token");
-const userUUID = localStorage.getItem("userUUID");
+const user_id = localStorage.getItem("user_id");
 
 
 const searchUsers = async () => {
@@ -42,18 +42,18 @@ const searchUsers = async () => {
 // Il va falloir rajouter un truc pour que l'on ne puisse pas spam l'invitation
 // soit un truc qui marche temporairement
 // soit un truc qui est permanent avec une requete a l'api
-const addFriend = async (friendUUID) => {
+const addFriend = async (friend_id) => {
 
-  if (!userUUID) {
+  if (!user_id) {
     return;
   }
-  if (!friendUUID) {
+  if (!friend_id) {
     return;
   }
 
   const friendInput = {
-    userUUID: userUUID,
-    friendUUID: friendUUID
+    user_id: user_id,
+    friend_id: friend_id
   };
 
   // On protege les routes

@@ -84,9 +84,9 @@ object Authentification {
     implicit val uuidMeta: Meta[UUID] = Meta[String].imap[UUID](UUID.fromString)(_.toString)
 
 
-    def generateToken(userUUID: UUID): String = {
+    def generateToken(user_id: UUID): String = {
         val claim = JwtClaim(
-            content = s"""{"userUUID": $userUUID}""",
+            content = s"""{"user_id": $user_id}""",
             expiration = Some(Instant.now.plusSeconds(3600).getEpochSecond),
             issuedAt = Some(Instant.now.getEpochSecond)
         )
@@ -163,9 +163,9 @@ object Authentification {
                     val password = json.hcursor.get[String]("password").getOrElse("")
 
                     loginUser(email, password, xa).flatMap {
-                        case Some(userUUID) =>
-                            val token = generateToken(userUUID)
-                            Ok(Json.obj("message" -> Json.fromString("User connected"), "userUUID" -> Json.fromString(userUUID.toString), "token" -> Json.fromString(token)))
+                        case Some(user_id) =>
+                            val token = generateToken(user_id)
+                            Ok(Json.obj("message" -> Json.fromString("User connected"), "user_id" -> Json.fromString(user_id.toString), "token" -> Json.fromString(token)))
                         case None =>
                             Ok(Json.obj("error" -> Json.fromString("Invalid credentials")))
                     }

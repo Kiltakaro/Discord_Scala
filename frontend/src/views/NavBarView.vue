@@ -6,7 +6,7 @@ const token = localStorage.getItem("token");
 
 const logout = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("userUUID");
+    localStorage.removeItem("user_id");
     router.push("/");
 };
 

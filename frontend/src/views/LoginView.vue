@@ -38,7 +38,7 @@ const login = async () => {
         const data = await response.json();
         if (data.token) {
             localStorage.setItem('token', data.token);
-            localStorage.setItem('userUUID', data.userUUID);
+            localStorage.setItem('user_id', data.user_id);
             router.push('/profile');
         }
 

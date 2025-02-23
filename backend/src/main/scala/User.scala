@@ -64,11 +64,11 @@ object User {
     }
 
     // Duplicat de getGuilds2 pour ne pas péter le système d'invitation
-    def getGuilds(userUUID: UUID, xa: Transactor[IO]): IO[List[(GuildInviteOutput)]]  = {
+    def getGuilds(user_id: UUID, xa: Transactor[IO]): IO[List[(GuildInviteOutput)]]  = {
         sql"""
             SELECT guild_id, guild_name FROM 
             User_Guild JOIN Guild ON User_Guild.guild_id = Guild.guild_id
-            WHERE user_id = ${userUUID.toString}
+            WHERE user_id = ${user_id.toString}
         """
         .query[GuildInviteOutput]
         .to[List]
@@ -76,11 +76,11 @@ object User {
     }
 
     // check ligne 178 pour utiliser celle ci en attendant
-    def getGuilds2(userUUID: UUID, xa: Transactor[IO]): IO[List[(GuildInviteOutput)]]  = {
+    def getGuilds2(user_id: UUID, xa: Transactor[IO]): IO[List[(GuildInviteOutput)]]  = {
         sql"""
             SELECT guild_id, guild_name FROM 
             User_Guild JOIN Guild ON User_Guild.guild_id = Guild.guild_id
-            WHERE user_id = ${userUUID.toString} AND invite_accepted = 1
+            WHERE user_id = ${user_id.toString} AND invite_accepted = 1
         """
         .query[GuildInviteOutput]
         .to[List]

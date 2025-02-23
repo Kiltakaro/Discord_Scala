@@ -4,12 +4,12 @@ import { useRouter } from 'vue-router';
 
 const friends = ref([]);
 const token = localStorage.getItem("token");
-const userUUID = localStorage.getItem("userUUID");
+const user_id = localStorage.getItem("user_id");
 
 
 const fetchFriends = async () => {
     try {
-        const response = await fetch(`http://localhost:8080/friends/${userUUID}`, {
+        const response = await fetch(`http://localhost:8080/friends/${user_id}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -42,7 +42,7 @@ onMounted(() => {
         <p class="text-lg text-gray-400">Voici vos Amis</p>
 
         <ul class="w-full max-w-md bg-gray-600 rounded-lg p-4 mt-4">
-            <li v-for="friend in friends" :key="friend.userUUID"
+            <li v-for="friend in friends" :key="friend.user_id"
                 class="flex justify-between items-center p-2 border-b border-gray-700">
                 <span>{{ friend.username }}</span>
             </li>

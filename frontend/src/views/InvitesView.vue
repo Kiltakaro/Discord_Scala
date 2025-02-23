@@ -4,19 +4,19 @@ import { ref, onMounted } from 'vue';
 const friendRequests = ref([]);
 const guildInvites = ref([]);
 const token = localStorage.getItem("token");
-const userUUID = localStorage.getItem("userUUID");
+const user_id = localStorage.getItem("user_id");
 
 
 ///////////////////// FRIENDS //////////////////////
 
 const fetchFriendRequests = async () => {
 
-  if (!userUUID) {
+  if (!user_id) {
     return;
   }
 
   try {
-    const response = await fetch(`http://localhost:8080/friends/requests/${userUUID}`, {
+    const response = await fetch(`http://localhost:8080/friends/requests/${user_id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -37,19 +37,19 @@ const fetchFriendRequests = async () => {
 };
 
 
-const acceptFriendRequest = async (friendUUID) => {
+const acceptFriendRequest = async (friend_id) => {
 
-  if (!userUUID) {
+  if (!user_id) {
     return;
   }
-  if (!friendUUID) {
+  if (!friend_id) {
     return;
   }
 
   // cf message dans le backend, on pourrait inverser les deux
   const friendInput = {
-    userUUID: userUUID,
-    friendUUID: friendUUID
+    user_id: user_id,
+    friend_id: friend_id
   };
 
   // On protege les routes
@@ -77,19 +77,19 @@ const acceptFriendRequest = async (friendUUID) => {
   }
 };
 
-const declineFriendRequest = async (friendUUID) => {
+const declineFriendRequest = async (friend_id) => {
 
-  if (!userUUID) {
+  if (!user_id) {
     return;
   }
-  if (!friendUUID) {
+  if (!friend_id) {
     return;
   }
 
   // cf message dans le backend, on pourrait inverser les deux
   const friendInput = {
-    userUUID: userUUID,
-    friendUUID: friendUUID
+    user_id: user_id,
+    friend_id: friend_id
   };
 
   // On protege les routes
@@ -122,7 +122,7 @@ const declineFriendRequest = async (friendUUID) => {
 
 const fetchGuildInvites = async () => {
   try {
-    const response = await fetch(`http://localhost:8080/guilds/invites/${userUUID}`, {
+    const response = await fetch(`http://localhost:8080/guilds/invites/${user_id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -142,18 +142,18 @@ const fetchGuildInvites = async () => {
   }
 };
 
-const acceptGuildInvite = async (guildUUID) => {
+const acceptGuildInvite = async (guild_id) => {
 
-  if (!userUUID) {
+  if (!user_id) {
     return;
   }
-  if (!guildUUID) {
+  if (!guild_id) {
     return;
   }
 
   const guildInput = {
-    userUUID: userUUID,
-    guildUUID: guildUUID
+    user_id: user_id,
+    guild_id: guild_id
   };
 
 
@@ -179,19 +179,19 @@ const acceptGuildInvite = async (guildUUID) => {
   }
 }
 
-const declineGuildInvite = async (guildUUID) => {
+const declineGuildInvite = async (guild_id) => {
 
-  if (!userUUID) {
+  if (!user_id) {
     return;
   }
-  if (!guildUUID) {
+  if (!guild_id) {
     return;
   }
 
   // cf message dans le backend, on pourrait inverser les deux
   const guildInput = {
-    userUUID: userUUID,
-    guildUUID: guildUUID
+    user_id: user_id,
+    guild_id: guild_id
   };
 
   // On protege les routes
@@ -235,15 +235,15 @@ onMounted(() => {
       <p class="text-lg text-gray-400">Demandes d'amis en attente</p>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 w-full max-w-4xl">
-        <div v-for="request in friendRequests" :key="request.userUUID"
+        <div v-for="request in friendRequests" :key="request.user_id"
           class="bg-gray-800 p-6 rounded-lg flex justify-between items-center">
           <span class="text-lg font-bold">{{ request.username }}</span>
           <div class="flex flex-col space-y-2">
-            <button @click="acceptFriendRequest(request.userUUID)"
+            <button @click="acceptFriendRequest(request.user_id)"
               class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-lg">
               Accepter
             </button>
-            <button @click="declineFriendRequest(request.userUUID)"
+            <button @click="declineFriendRequest(request.user_id)"
               class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg">
               Refuser
             </button>
@@ -261,15 +261,15 @@ onMounted(() => {
       <p class="text-lg text-gray-400">Invitations aux serveurs en attente</p>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 w-full max-w-4xl">
-        <div v-for="invite in guildInvites" :key="invite.guildUUID"
+        <div v-for="invite in guildInvites" :key="invite.guild_id"
           class="bg-gray-800 p-6 rounded-lg flex justify-between items-center">
           <span class="text-lg font-bold">{{ invite.guild_name }}</span>
           <div class="flex flex-col space-y-2">
-            <button @click="acceptGuildInvite(invite.guildUUID)"
+            <button @click="acceptGuildInvite(invite.guild_id)"
               class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-lg">
               Accepter
             </button>
-            <button @click="declineGuildInvite(invite.guildUUID)"
+            <button @click="declineGuildInvite(invite.guild_id)"
               class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg">
               Refuser
             </button>

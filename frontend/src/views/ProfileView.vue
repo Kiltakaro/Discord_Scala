@@ -11,7 +11,7 @@ const oldPassword = ref("");
 const newPassword = ref("");
 const confirmPassword = ref("");
 const token = localStorage.getItem("token");
-const userUUID = localStorage.getItem("userUUID");
+const user_id = localStorage.getItem("user_id");
 
 
 //A supprimer si on décide de ne pas faire de pdp custom, ça dépend de la solution pour l'hébergement
@@ -29,7 +29,7 @@ const changePfp = (event) => {
 
 const changeUsername = async () => {
 
-    if (!userUUID) {
+    if (!user_id) {
         return;
     }
 
@@ -38,7 +38,7 @@ const changeUsername = async () => {
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/users/${userUUID}/username`, {
+        const response = await fetch(`http://localhost:8080/users/${user_id}/username`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -60,7 +60,7 @@ const changeUsername = async () => {
 
 const changeEmail = async () => {
 
-    if (!userUUID) {
+    if (!user_id) {
         return;
     }
 
@@ -69,7 +69,7 @@ const changeEmail = async () => {
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/users/${userUUID}/email`, {
+        const response = await fetch(`http://localhost:8080/users/${user_id}/email`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -92,7 +92,7 @@ const changeEmail = async () => {
 
 const changePassword = async () => {
 
-    if (!userUUID) {
+    if (!user_id) {
         return;
     }
 
@@ -107,7 +107,7 @@ const changePassword = async () => {
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/users/${userUUID}/password`, {
+        const response = await fetch(`http://localhost:8080/users/${user_id}/password`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -131,7 +131,7 @@ const changePassword = async () => {
 
 const deleteAccount = async () => {
 
-    if (!userUUID) {
+    if (!user_id) {
         return;
     }
 
@@ -141,7 +141,7 @@ const deleteAccount = async () => {
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/users/${userUUID}`, {
+        const response = await fetch(`http://localhost:8080/users/${user_id}`, {
             method: "DELETE",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -154,7 +154,7 @@ const deleteAccount = async () => {
 
         alert("Compte Supprimé !")
         localStorage.removeItem("token");
-        localStorage.removeItem("userUUID");
+        localStorage.removeItem("user_id");
         router.push('/login');
 
     } catch (error) {

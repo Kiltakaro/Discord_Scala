@@ -9,17 +9,17 @@ const router = useRouter();
 const friends = ref([]);
 const guilds = ref([]);
 const token = localStorage.getItem("token");
-const userUUID = localStorage.getItem("userUUID");
+const user_id = localStorage.getItem("user_id");
 const errorMessage = ref(null);
 
 const fetchFriends = async () => {
 
-    if (!userUUID) {
+    if (!user_id) {
         return;
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/friends/${userUUID}`, {
+        const response = await fetch(`http://localhost:8080/friends/${user_id}`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -42,12 +42,12 @@ const fetchFriends = async () => {
 
 const fetchGuilds = async () => {
 
-    if (!userUUID) {
+    if (!user_id) {
         return;
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/users/${userUUID}/guilds`, {
+        const response = await fetch(`http://localhost:8080/users/${user_id}/guilds`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -75,8 +75,8 @@ const friendRedirect = (friend) => {
 };
 
 // Redirection vers un serveur
-const guildRedirect = async (guildUUID) => {
-    router.push(`/server/${guildUUID}`);
+const guildRedirect = async (guild_id) => {
+    router.push(`/server/${guild_id}`);
 };
 
 onMounted(() => {
@@ -92,7 +92,7 @@ onMounted(() => {
         <div class="w-full max-w-lg mb-8">
             <h2 class="text-xl font-semibold mb-4 text-gray-300 text-center">Messages Privés</h2>
             <div class="flex flex-wrap justify-center gap-6">
-                <button v-for="friend in friends" :key="friend.userUUID" @click="friendRedirect(friend)"
+                <button v-for="friend in friends" :key="friend.user_id" @click="friendRedirect(friend)"
                     class="flex flex-col items-center focus:outline-none">
                     <IconMessage class="w-16 h-16 rounded-full border-2 border-gray-700 hover:border-white transition" />
                     <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ friend.username }}</span>
@@ -103,7 +103,7 @@ onMounted(() => {
             <h2 class="text-xl font-semibold mb-4 text-gray-300 text-center">Serveurs</h2>
             <p v-if="errorMessage" class="text-red-500">{{ errorMessage }}</p>
             <div class="flex flex-wrap justify-center gap-6">
-                <button v-for="guild in guilds" :key="guild.guildUUID" @click="guildRedirect(guild.guildUUID)"
+                <button v-for="guild in guilds" :key="guild.guild_id" @click="guildRedirect(guild.guild_id)"
                     class="flex flex-col items-center focus:outline-none">
                     <IconServer class="w-16 h-16 rounded-full border-2 border-gray-700 hover:border-white transition" />
                     <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ guild.guild_name || "Nom de guilde"}}</span>

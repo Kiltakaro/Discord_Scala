@@ -6,7 +6,7 @@ const router = useRouter();
 const guildName = ref("");
 const guildDescription = ref("");
 const errorMessage = ref("");
-const userUUID = localStorage.getItem("userUUID");
+const user_id = localStorage.getItem("user_id");
 const token = localStorage.getItem("token");
 
 const createGuild = async () => {
@@ -25,7 +25,7 @@ const createGuild = async () => {
       body: JSON.stringify({
         guildName: guildName.value,
         guildDescription: guildDescription.value,
-        ownerId: userUUID
+        ownerId: user_id
       })
     });
 
