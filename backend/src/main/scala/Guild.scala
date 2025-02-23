@@ -142,9 +142,14 @@ object Guild {
         addUser.transact(xa)
     }
 
-    def getUsersInGuild(id: UUID, xa: Transactor[IO]): IO[List[UUID]] = {
-        val getUsers: doobie.ConnectionIO[List[UUID]] = sql"SELECT user_id FROM User_Guild WHERE guild_id = $id"
-        .query[UUID]
+
+    def getUsersInGuild(id: UUID, xa: Transactor[IO]): IO[List[UserOutput]] = {
+        val getUsers = sql"""
+        SELECT user_id, username FROM 
+        User_Guild JOIN User ON User_Guild.user_id = User.user_id
+        WHERE guild_id = ${id.toString} AND invite_accepted = 1
+        """
+        .query[UserOutput]
         .to[List]
         getUsers.transact(xa)
     }
@@ -160,6 +165,7 @@ object Guild {
 
     // Version individuelle : même système que les demandes d'ami
 
+    // on pourrait rajouter (qui a envoyé l'invitation) pour plus tard
     def sendGuildInvite(guildInviteInput: GuildInviteInput, xa: Transactor[IO]): IO[Int] = {
         val insertGuildInvite =
         sql"""
@@ -191,7 +197,7 @@ object Guild {
     def acceptGuildInvite(guildInviteInput: GuildInviteInput, xa: Transactor[IO]): IO[Int] = {
         sql"""
             UPDATE User_Guild SET invite_accepted = 1 WHERE 
-            user_id = ${guildInviteInput.user_id} AND user_id2 = ${guildInviteInput.guild_id}
+            user_id = ${guildInviteInput.user_id} AND guild_id = ${guildInviteInput.guild_id}
         """.update.run
         .transact(xa)
     }
@@ -254,10 +260,6 @@ object Guild {
     def guildRoutes(xa: Transactor[IO])= {
         HttpRoutes.of[IO] {
             
-            // Pour mettre un String dans une route
-            case GET -> Root / "hello" / name =>
-                Ok(s"Hello, $name.")
-            
             // // CREATE
             // case r @ POST -> Root / "create" =>
             //     r.as[GuildInput].attempt.flatMap {
@@ -318,7 +320,7 @@ object Guild {
                 }
 
             
-            // Récup tous les serveurs d'un user (WIP je sais pas comment récup / utiliser un array clickhouse en scala)
+            // Récup tous les users d'une guild
             case GET -> Root / UUIDVar(id) / "users" =>
                 getUsersInGuild(id, xa).flatMap { users =>
                     Ok(users.asJson)
