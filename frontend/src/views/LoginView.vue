@@ -39,6 +39,7 @@ const login = async () => {
         if (data.token) {
             localStorage.setItem('token', data.token);
             localStorage.setItem('user_id', data.user_id);
+            window.dispatchEvent(new Event("storage"));  
             router.push('/serverList');
         }
 

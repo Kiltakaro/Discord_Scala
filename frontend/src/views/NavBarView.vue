@@ -1,14 +1,28 @@
 <script setup>
 import { useRouter } from "vue-router";
+import { ref, onMounted, onUnmounted, watch } from "vue";
 
 const router = useRouter();
-const token = localStorage.getItem("token");
+const token = ref(localStorage.getItem("token"));
 
 const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user_id");
+    window.dispatchEvent(new Event("storage"));
+    token.value = null;
     router.push("/");
 };
+
+const readToken = () => {
+    const newToken = localStorage.getItem("token");
+    if (newToken !== token.value) {
+        token.value = newToken;
+    }
+};
+
+onMounted(() => {
+    window.addEventListener("storage", readToken);
+});
 
 </script>
 

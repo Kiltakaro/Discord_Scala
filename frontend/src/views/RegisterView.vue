@@ -34,6 +34,7 @@ const register = async () => {
         }
         
         // register ok => go se login
+        window.dispatchEvent(new Event("storage"));
         router.push('/login');
 
     } catch (error) {
