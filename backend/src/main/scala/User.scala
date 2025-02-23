@@ -87,9 +87,10 @@ object User {
         .transact(xa)
     }
 
-    def getUserById(id: UUID, xa: Transactor[IO]): IO[Option[(UUID, String, String, String)]]= {
-        sql"SELECT user_id, username, password, email FROM User WHERE user_id = $id"
-        .query[(UUID, String, String, String)]
+    // j'eneleve le password de la requete, aucun interet de le récup, en plus il est hashé
+    def getUserById(id: UUID, xa: Transactor[IO]): IO[Option[(UUID, String, String)]]= {
+        sql"SELECT user_id, username, email FROM User WHERE user_id = $id"
+        .query[(UUID, String, String)]
         .option
         .transact(xa)
     }
@@ -160,8 +161,12 @@ object User {
                 getUserById(id, xa).flatMap { 
                     userOption => 
                         userOption match {
-                        case Some((id, username, password, email)) => 
-                            Ok((id, username, password, email).asJson)
+                        case Some((id, username, email)) => 
+                            Ok(Json.obj(
+                                "user_id" -> Json.fromString(id.toString),
+                                "username" -> Json.fromString(username),
+                                "email" -> Json.fromString(email),
+                            ))
 
                         case None =>
                             NotFound(s"No user with ID : $id")
@@ -205,6 +210,7 @@ object User {
                 }
 
             //////////////// CHANGE TOUT 
+            // Cette route semble etre inutile MTN
             // Mettre à jour un user. C'est en gros le même principe que pour l'ajout à part qu'on check si le user existe avant
             case r @ PUT -> Root / UUIDVar(id) => 
                 getUserById(id, xa).flatMap { userOption =>
@@ -233,8 +239,8 @@ object User {
 
             // Ne modifie que le password
             case r @ PUT -> Root / UUIDVar(id) / "password" => 
-                getUserById(id, xa).flatMap { passwordsOption =>
-                    passwordsOption match { 
+                getUserById(id, xa).flatMap { userOption =>
+                    userOption match { 
                         case Some(passwords) => 
                             r.as[ChangePassword].attempt.flatMap {
                                 case Right(passwords) => 
@@ -263,8 +269,8 @@ object User {
 
             // Ne modifie que l'email
             case r @ PUT -> Root / UUIDVar(id) / "email" => 
-                getUserById(id, xa).flatMap { emailOption =>
-                    emailOption match { 
+                getUserById(id, xa).flatMap { userOption =>
+                    userOption match { 
                         case Some(email) => 
                             r.as[Json].flatMap { json =>
                                 val newEmail = json.hcursor.get[String]("email").getOrElse("")
@@ -283,8 +289,8 @@ object User {
             
             // Ne modifie que le username
             case r @ PUT -> Root / UUIDVar(id) / "username" => 
-                getUserById(id, xa).flatMap { usernameOption =>
-                    usernameOption match { 
+                getUserById(id, xa).flatMap { userOption =>
+                    userOption match { 
                         case Some(username) => 
                             r.as[Json].flatMap { json =>
                                 val newUsername = json.hcursor.get[String]("username").getOrElse("")
