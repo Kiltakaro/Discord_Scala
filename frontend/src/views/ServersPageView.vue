@@ -67,8 +67,9 @@ const friendRedirect = (friend) => {
     console.log(`redirect to ${friend.username}`);
 };
 
+// Redirection vers un serveur
 const guildRedirect = (guild) => {
-    console.log(`redirect to ${guild.name}`);
+  router.push(`/server/${guild.guildId}`);
 };
 
 onMounted(() => {

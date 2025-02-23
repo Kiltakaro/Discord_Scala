@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import ServersPageView from '../views/ServersPageView.vue'
+import ServerView from '../views/ServerView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import FriendSearchView from '../views/FriendSearchView.vue'
 import InvitesView from '../views/InvitesView.vue'
@@ -45,6 +46,11 @@ const router = createRouter({
       name: 'create-guild', 
       component: CreateGuildView,
     },
+    {
+      path: '/server/:id',
+      name: 'server',
+      component: ServerView,
+    },    
     {
       path: '/profile',
       name: 'profile',

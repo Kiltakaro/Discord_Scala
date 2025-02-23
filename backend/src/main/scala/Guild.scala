@@ -1,6 +1,7 @@
 import cats.effect._
 import io.circe.generic.auto._
 import io.circe.syntax._
+import io.circe.Json
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.dsl.io._
@@ -14,6 +15,7 @@ import doobie.implicits._
 import javax.xml.crypto.Data
 import java.util.UUID
 import doobie.util.meta.Meta
+
 
 
 // ça sert a rien pour le moment
@@ -256,37 +258,41 @@ object Guild {
             case GET -> Root / "hello" / name =>
                 Ok(s"Hello, $name.")
             
-            // CREATE
-            case r @ POST -> Root / "create" =>
-                r.as[GuildInput].attempt.flatMap {
-                    case Right(guild: GuildInput) =>
-                        if (guild.guild_name.length > 0) {
-                            addGuild(guild, xa).flatMap { result =>
-                                Ok(s"rows affected : $result")
-                            }
-                        }
-                        else {
-                            BadRequest("Name must be longer")
-                        }
-                    case Left(_) =>
-                        BadRequest("Error format {guild_name: String, owner_id : UUID}")
-                }
-            // Version expérimentale
-            // case req @ POST -> Root / "create" =>
-            //     req.as[Json].flatMap { json =>
-            //         val guildName = json.hcursor.get[String]("guildName").getOrElse("")
-            //         val guildDescription = json.hcursor.get[String]("guildDescription").getOrElse("")
-            //         val ownerId = UUID.fromString(json.hcursor.get[String]("ownerId").getOrElse(""))
-
-            //         if (guildName.nonEmpty) {
-            //             createGuild(guildName, guildDescription, ownerId, xa).flatMap { guildId =>
-            //                 Ok(Json.obj("message" -> Json.fromString("Serveur créé !"), "guildId" -> Json.fromString(guildId.toString)))
+            // // CREATE
+            // case r @ POST -> Root / "create" =>
+            //     r.as[GuildInput].attempt.flatMap {
+            //         case Right(guild: GuildInput) =>
+            //             if (guild.guild_name.length > 0) {
+            //                 addGuild(guild, xa).flatMap { result =>
+            //                     Ok(s"rows affected : $result")
+            //                 }
             //             }
-            //         } else {
-            //             BadRequest(Json.obj("error" -> Json.fromString("Le nom du serveur ne peut pas être vide.")))
-            //         }
+            //             else {
+            //                 BadRequest("Name must be longer")
+            //             }
+            //         case Left(_) =>
+            //             BadRequest("Error format {guild_name: String, owner_id : UUID}")
             //     }
 
+            // Version expérimentale
+            case req @ POST -> Root / "create" =>
+                req.as[Json].flatMap { json =>
+                    val guildName = json.hcursor.get[String]("guildName").getOrElse("")
+                    val guildDescription = json.hcursor.get[String]("guildDescription").getOrElse("")
+                    val ownerIdStr = json.hcursor.get[String]("ownerId").getOrElse("")
+
+                    if (guildName.nonEmpty && ownerIdStr.nonEmpty) {
+                        val ownerId = UUID.fromString(ownerIdStr)
+                        createGuild(guildName, guildDescription, ownerId, xa).flatMap { guildId =>
+                            Ok(Json.obj(
+                                "message" -> Json.fromString("Serveur créé avec succès"),
+                                "guildId" -> Json.fromString(guildId.toString)
+                            ))
+                        }
+                    } else {
+                        BadRequest(Json.obj("error" -> Json.fromString("Le nom du serveur et l'ID du propriétaire sont obligatoires.")))
+                    }
+                }
             
             // READ
             // Attention la requête c'est /Guilds/<uuid> et pas /Guilds?id=<uuid>, ça peut porter à confusion l'id n'est pas un paramètre

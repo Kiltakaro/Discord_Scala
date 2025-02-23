@@ -5,11 +5,15 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 const guildName = ref("");
 const guildDescription = ref("");
+const errorMessage = ref("");
 const userUUID = localStorage.getItem("userUUID");
 const token = localStorage.getItem("token");
 
 const createGuild = async () => {
-  if (!guildName.value) return alert("Le nom du serveur est obligatoire !");
+  if (!guildName.value.trim()) {
+    errorMessage.value = "Le serveur doit avoir un nom";
+    return;
+  }
 
   try {
     const response = await fetch("http://localhost:8080/guilds/create", {
@@ -28,12 +32,14 @@ const createGuild = async () => {
     if (response.ok) {
       const data = await response.json();
       alert("Serveur créé");
-      router.push("/serverList"); // Redirige vers la liste des serveurs
+      router.push(`/server/${data.guildId}`); // Redirige vers le nouveau serveur
     } else {
-      alert("Erreur lors de la création du serveur");
+      const errorData = await response.json();
+      errorMessage.value = errorData.error || "Erreur lors de la création du serveur.";
     }
   } catch (error) {
     console.error(error);
+    errorMessage.value = "Une erreur s'est produite. Veuillez réessayer.";
   }
 };
 </script>
@@ -41,7 +47,9 @@ const createGuild = async () => {
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-6">
     <h1 class="text-3xl font-bold mb-6">Créer un serveur</h1>
-    
+
+    <div v-if="errorMessage" class="text-red-500">{{ errorMessage }}</div>
+
     <div class="w-full max-w-md">
       <label class="block text-gray-300 mb-1">Nom du serveur</label>
       <input v-model="guildName" type="text" placeholder="Nom du serveur"
