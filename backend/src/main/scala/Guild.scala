@@ -67,9 +67,9 @@ object Guild {
         queryToList.transact(xa)
     }
 
-    def getGuildById(id: UUID, xa: Transactor[IO]): IO[Option[(UUID, String)]]= {
-        sql"SELECT guild_id, guild_name FROM Guild WHERE guild_id = $id"
-        .query[(UUID, String)]
+    def getGuildById(id: UUID, xa: Transactor[IO]): IO[Option[(UUID, String, String, UUID)]]= {
+        sql"SELECT guild_id, guild_name, guild_description, owner_id FROM Guild WHERE guild_id = $id"
+        .query[(UUID, String, String, UUID)]
         .option
         .transact(xa)
     }
@@ -295,18 +295,22 @@ object Guild {
                 }
             
             // READ
-            // Attention la requête c'est /Guilds/<uuid> et pas /Guilds?id=<uuid>, ça peut porter à confusion l'id n'est pas un paramètre
+            // Update : retourne un objet JSON au lieu d'un tuple comme dans l'ancienne version
+            // ça facilite l'accès aux données dans le front car on peut directement utiliser "objet.attribut_de_l'objet"
             case GET -> Root / UUIDVar(id) =>
-                getGuildById(id, xa).flatMap { 
-                    guildOption => 
-                        guildOption match {
-                        case Some((id, guild_name)) => 
-                            Ok((id, guild_name).asJson)
+                getGuildById(id, xa).flatMap {
+                    case Some((id, guildName, guildDesc, ownerId)) =>
+                        println(s"Guild fetched: ID = $id, Name = $guildName") // Debugging log
+                        Ok(Json.obj(
+                            "guild_id" -> Json.fromString(id.toString),
+                            "guild_name" -> Json.fromString(guildName),
+                            "guild_desc" -> Json.fromString(guildDesc),
+                            "owner_id" -> Json.fromString(ownerId.toString)
+                        ))
 
-                        case None =>
-                            NotFound(s"No Guild with ID : $id")
-
-                        }
+                    case None =>
+                        println(s"Guild not found for ID: $id") // Debugging log
+                        NotFound(Json.obj("error" -> Json.fromString("Guild not found")))
                 }
             
             // Recup tous les Guild

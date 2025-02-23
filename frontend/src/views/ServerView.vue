@@ -23,6 +23,7 @@ const fetchGuild = async () => {
         }
 
         const data = await response.json();
+        console.log("Guild data :", data);
 
         if (data.guild_name) {
             guild.value = data;
@@ -42,9 +43,10 @@ onMounted(() => {
 <template>
   <div class="min-h-screen flex flex-col items-center bg-gray-900 text-white p-6">
     <h1 class="text-3xl font-bold mb-6">
-      Serveur: {{ guild?.guild_name || "Nom inconnu" }}
+      Serveur: {{ guild?.guild_name || "Chargement..." }}
     </h1>
-    <p>{{ guild?.guild_description || "Aucune description disponible" }}</p>
+    <p>{{ guild?.guild_desc || "Aucune description disponible" }}</p>
+    <p>{{ guild?.owner_id || "Propriétaire inconnu" }}</p>
     <p v-if="errorMessage" class="text-red-500">{{ errorMessage }}</p>
   </div>
 </template>
