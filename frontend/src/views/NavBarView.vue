@@ -7,6 +7,7 @@ const token = localStorage.getItem("token");
 const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user_id");
+    location.reload();
     router.push("/");
 };
 
