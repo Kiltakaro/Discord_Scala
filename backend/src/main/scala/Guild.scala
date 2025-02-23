@@ -1,12 +1,11 @@
-import cats.effect._
-import io.circe.generic.auto._
-import io.circe.syntax._
+import cats.effect.*
+import io.circe.generic.auto.*
+import io.circe.syntax.*
 import io.circe.Json
-import org.http4s._
-import org.http4s.circe._
-import org.http4s.dsl.io._
-import org.http4s.circe.CirceEntityDecoder._
-
+import org.http4s.{dsl, *}
+import org.http4s.circe.*
+import org.http4s.dsl.io.*
+import org.http4s.circe.CirceEntityDecoder.*
 import cats.effect.IO
 // import cats.effect.concurrent.Ref
 import cats.implicits._
@@ -169,6 +168,9 @@ object Guild {
         """.query[Int].unique.transact(xa)
     }
 
+
+    /////////////////////////// BANS ///////////////////////////
+
     def banUserFromGuild(userId: UUID, guildId: UUID, xa: Transactor[IO]): IO[UUID] = {
         for {
             _ <- sql"INSERT INTO Guild_Ban (user_id, guild_id) VALUES ($userId, $guildId)"
@@ -182,6 +184,14 @@ object Guild {
               .transact(xa)
         } yield userId
     }
+
+    def checkIfUserIsBanned(userId: UUID, guildId: UUID, xa: Transactor[IO]): IO[Int] = {
+        sql"""
+             SELECT count() FROM Guild_Ban
+             WHERE (guild_id = $guildId) AND (user_id = $userId)
+        """.query[Int].unique.transact(xa)
+    }
+
     /////////////////////////// GUILD INVITES #1 ///////////////////////////
 
     // Version individuelle : même système que les demandes d'ami
@@ -451,6 +461,17 @@ object Guild {
                     case Left(_) =>
                         BadRequest("Bad request. Format { user_id: String, guild_id: String }")
                 }
-            }
+
+            case GET -> Root / UUIDVar(guildId) / "ban" / UUIDVar(userId) =>
+                checkIfUserIsBanned(userId, guildId, xa).flatMap { result =>
+                    result match {
+                        case 0 => // L'utilisateur n'a pas été banni : on peut lui envoyer une invitation
+                            Ok(s"Permitted action")
+
+                        case _ => // L'utilisateur a été banni du serveur : pas d'envoi d'invitation
+                            Forbidden(s"Forbidden action : user has been banned from this guild")
+                    }
+                }
         }
+    }
 }

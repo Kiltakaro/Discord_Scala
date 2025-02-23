@@ -69,7 +69,21 @@ const inviteUserToGuild = async (invited_id) => {
     // seul un utilisateur connecté peut chercher des amis
     // donc on utilise son token
     try {
-        const response = await fetch(`http://localhost:8080/guilds/invites/add`, {
+        // On n'envoie pas d'invitation à un user banni
+        const checkBanResponse = await fetch(`http://localhost:8080/guilds/${guildId.value}/ban/${invited_id}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+        });
+
+        if (!checkBanResponse.ok) {
+            alert("Impossible d'envoyer une invitation à cet utilisateur");
+            throw new Error(`HTTP Error : ${checkBanResponse.status}`)
+        }
+
+        const inviteResponse = await fetch(`http://localhost:8080/guilds/invites/add`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -78,7 +92,7 @@ const inviteUserToGuild = async (invited_id) => {
             body: JSON.stringify(invitedInput)
         });
 
-        if (!response.ok) {
+        if (!inviteResponse.ok) {
             return;
         }
         alert("Demande d'ajout au serveur envoyé !");
@@ -150,6 +164,11 @@ const banUser = async (banned_id) => {
         return;
     }
 
+    const confirmation = confirm("Êtes-vous sûr à 100% de vouloir bannir cet utilisateur ?");
+    if (!confirmation) {
+        return;
+    }
+
     const banInput = {
         user_id: banned_id,
         guild_id: guildId.value
@@ -170,6 +189,7 @@ const banUser = async (banned_id) => {
             throw new Error(`Erreur : ${response.status}`);
         }
         console.log("Banned id :", banned_id);
+        alert("L'utilisateur a bien été banni du serveur");
         await fetchUsersInGuild();
 
     } catch (error) {
