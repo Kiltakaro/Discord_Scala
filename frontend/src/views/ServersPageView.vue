@@ -5,6 +5,7 @@ const friends = ref([]);
 const guilds = ref([]);
 const token = localStorage.getItem("token");
 const userUUID = localStorage.getItem("userUUID");
+const errorMessage = ref(null);
 
 const fetchFriends = async () => {
 
@@ -42,21 +43,22 @@ const fetchGuilds = async () => {
 
     try {
         const response = await fetch(`http://localhost:8080/users/${userUUID}/guilds`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-        },
-    });
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+        });
 
         if (!response.ok) {
-            return;
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
         guilds.value = await response.json();
         console.log("Guilds :", guilds.value);
 
     } catch (error) {
+        errorMessage.value = "Erreur lors du chargement de la liste de serveurs";
         console.log(error);
     }
 };
@@ -94,11 +96,12 @@ onMounted(() => {
         </div>
         <div class="w-full max-w-lg">
             <h2 class="text-xl font-semibold mb-4 text-gray-300 text-center">Serveurs</h2>
+            <p v-if="errorMessage" class="text-red-500">{{ errorMessage }}</p>
             <div class="flex flex-wrap justify-center gap-6">
-                <button v-for="guild in guilds" :key="guild.id" @click="guildRedirect(guild)"
+                <button v-for="guild in guilds" :key="guild.guild_id" @click="guildRedirect(guild)"
                     class="flex flex-col items-center focus:outline-none">
                         <!--<img :src="guild.icon" class="w-16 h-16 rounded-full border-2 border-gray-700 hover:border-white transition">-->
-                    <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ guild.name }}</span>
+                    <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ guild.guild_name || "Nom de guilde"}}</span>
                 </button>
                 <RouterLink to="/create-guild" class="mt-4 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg">
                     Créer un serveur

@@ -295,12 +295,11 @@ object Guild {
                 }
             
             // READ
-            // Update : retourne un objet JSON au lieu d'un tuple comme dans l'ancienne version
-            // ça facilite l'accès aux données dans le front car on peut directement utiliser "objet.attribut_de_l'objet"
+            // Update : retourne un objet JSON de tous les attributs au lieu d'un tuple de l'id et du nom
+            // ça facilite grandement l'accès aux données dans le front
             case GET -> Root / UUIDVar(id) =>
                 getGuildById(id, xa).flatMap {
                     case Some((id, guildName, guildDesc, ownerId)) =>
-                        println(s"Guild fetched: ID = $id, Name = $guildName") // Debugging log
                         Ok(Json.obj(
                             "guild_id" -> Json.fromString(id.toString),
                             "guild_name" -> Json.fromString(guildName),
@@ -309,7 +308,6 @@ object Guild {
                         ))
 
                     case None =>
-                        println(s"Guild not found for ID: $id") // Debugging log
                         NotFound(Json.obj("error" -> Json.fromString("Guild not found")))
                 }
             

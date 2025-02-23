@@ -63,13 +63,19 @@ object User {
         // On va eviter de renvoyer le mot de passe aux utilisateurs ^^
     }
 
-    def getGuilds(id: UUID, xa: Transactor[IO]): IO[List[UUID]] = {
-        val query: doobie.ConnectionIO[List[UUID]] = sql"SELECT guilds FROM User WHERE user_id = $id"
-          .query[UUID]
-          .to[List]
-        query.transact(xa)
+    // Duplicat de getGuilds2 pour ne pas péter le système d'invitation
+    def getGuilds(userUUID: UUID, xa: Transactor[IO]): IO[List[(GuildInviteOutput)]]  = {
+        sql"""
+            SELECT guild_id, guild_name FROM 
+            User_Guild JOIN Guild ON User_Guild.guild_id = Guild.guild_id
+            WHERE user_id = ${userUUID.toString}
+        """
+        .query[GuildInviteOutput]
+        .to[List]
+        .transact(xa)
     }
 
+    // check ligne 178 pour utiliser celle ci en attendant
     def getGuilds2(userUUID: UUID, xa: Transactor[IO]): IO[List[(GuildInviteOutput)]]  = {
         sql"""
             SELECT guild_id, guild_name FROM 
@@ -169,8 +175,8 @@ object User {
                 }
 
             // Recup la liste des guilds d'un user
-            case GET -> Root / UUIDVar(uuid) / "guilds" =>
-                getGuilds2(uuid, xa).flatMap { guilds =>
+            case GET -> Root / UUIDVar(id) / "guilds" =>
+                getGuilds(id, xa).flatMap { guilds =>
                     Ok(guilds.asJson)
             } 
             
