@@ -160,7 +160,28 @@ object Guild {
         .run
         removeUser.transact(xa)
     }
-    
+
+    // Pour savoir si un user est dans une guild : 0 = le user n'y est pas, 1 = le user y est
+    def checkIfUserIsInGuild(guildId: UUID, userId: UUID, xa: Transactor[IO]): IO[Int] = {
+        sql"""
+          SELECT count() FROM User_Guild
+          WHERE (user_id = $userId) AND (guild_id = $guildId)
+        """.query[Int].unique.transact(xa)
+    }
+
+    def banUserFromGuild(userId: UUID, guildId: UUID, xa: Transactor[IO]): IO[UUID] = {
+        for {
+            _ <- sql"INSERT INTO Guild_Ban (user_id, guild_id) VALUES ($userId, $guildId)"
+              .update
+              .run
+              .transact(xa)
+
+            _ <- sql"DELETE FROM User_Guild WHERE user_id = $userId AND guild_id = $guildId"
+              .update
+              .run
+              .transact(xa)
+        } yield userId
+    }
     /////////////////////////// GUILD INVITES #1 ///////////////////////////
 
     // Version individuelle : même système que les demandes d'ami
@@ -420,6 +441,16 @@ object Guild {
                 }
 
 
+            case r @ POST -> Root / "ban" =>
+                r.as[GuildInviteInput].attempt.flatMap {
+                    case Right(input) =>
+                        banUserFromGuild(UUID.fromString(input.user_id), UUID.fromString(input.guild_id), xa).flatMap { bannedId =>
+                            Ok(s"Banned user ID : $bannedId")
+                        }
+
+                    case Left(_) =>
+                        BadRequest("Bad request. Format { user_id: String, guild_id: String }")
+                }
             }
         }
 }

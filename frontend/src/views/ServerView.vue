@@ -11,7 +11,7 @@ const user_id = localStorage.getItem("user_id");
 const owner = ref(false);
 const users = ref([]);
 
-// pour les invitations 
+// pour les invitations
 const username = ref('');
 const users_in_guild = ref([]);
 
@@ -150,11 +150,27 @@ const banUser = async (banned_id) => {
         return;
     }
 
+    const banInput = {
+        user_id: banned_id,
+        guild_id: guildId.value
+    };
     // Sur la route va falloir verifier que l'utilisateur est bien l'admin
 
     try {
+        const response = await fetch(`http://localhost:8080/guilds/ban`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(banInput)
+        });
 
+        if (!response.ok) {
+            throw new Error(`Erreur : ${response.status}`);
+        }
         console.log("Banned id :", banned_id);
+        await fetchUsersInGuild();
 
     } catch (error) {
         console.log(error);
@@ -250,8 +266,8 @@ onMounted(() => {
                         class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700">
                         <span class="flex-1">{{ user_of_guild.username }}</span>
 
-                        <!-- Visible que pour l'admin -->
-                        <div v-if="owner" class="flex space-x-2">
+                        <!-- Visible que pour l'admin + empêche l'admin de se ban / kick lui-même -->
+                        <div v-if="owner && user_id !== user_of_guild.uuid" class="flex space-x-2">
                             <button @click="kickUser(user_of_guild.uuid)"
                                 class="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg">
                                 Kick
