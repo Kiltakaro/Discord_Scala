@@ -1,0 +1,5 @@
+@import './base.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* les tailwinds hurlent mais c'est normal ça marche quand meme */

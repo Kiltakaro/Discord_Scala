@@ -1,0 +1,44 @@
+Je laisse la doc/tuto au dessus pour qu'on comprenne
+Faites pareil sinon on va jamais rien comprendre au code
+Je sais c'est le bordel à cause de ça mais on fera le tri plus tard
+
+Pour le moment les commandes utiles
+- pour lancer le projet
+sbt run 
+(chosir main si un choix est proposé)
+- pour tester, depuis un autre terminal 
+curl http://localhost:8080/admin/ping
+vous comprenez le paterne
+
+/////////////////////// POUR CLICKHOUSE //////////////////////
+
+Lorsque changements dans le build.sbt il faut recompiler
+sbt compile 
+
+telechargez clickhouse
+installez clickhouse normalement ça met un msg install
+vous allez créer un compte mais osef
+dans un terminal
+clickhouse server
+
+////////////////////// DERNIÈRES NEWS //////////////////////////
+
+On a une route not found pour la méthode GET, est-ce nécessaire d'en créer une pour POST, DELETE et PUT ?
+Le DEFAULT now() semble ne pas marcher du tout avec le fichier sql pour une raison qui m'échappe totalement, si quelqu'un peut tester ça de son côté ce serait cool
+
+
+avec cet exemple de code on peut utiliser le .unique 
+dans une querry ce qui facilitera peut etre la suite
+"If we know for sure that the query will return exactly one row, we can use the unique method:"
+
+    // def findActorByIdProgram(id: Int): IO[Actor] = {
+    //   val findActorById: doobie.ConnectionIO[Actor] =
+    //     sql"select id, name from actors where id = $id".query[Actor].unique
+    //   findActorById.transact(xa)
+    // }
+
+
+//////////////////// À FAIRE POUR LA BDD /////////////////////
+
+Voir pour assurer l'unicité des UUID (generateUUIDv4() a déjà une sécu mais si jamais on veut forcer un ID faut faire gaffe)
+

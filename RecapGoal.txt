@@ -1,0 +1,38 @@
+Petit endroit pour recap ou on en est car je mis perds avec tous ces projets
+
+---------------------- RENDU 1 ---------------------
+
+- Creating an account, deleting it, modifying account’s information.
+    (FINI)
+- Authentication & Authorization of users on servers.
+    (FINI)
+- Creating a server, modifying its information, deleting it
+    (quasi fini)
+- Inviting users to servers, allowing users to leave servers
+    (quasi fini)
+- Allow admin actions on servers : ban/kick users
+    (XXXXXXXXXX)
+
+--------------------- RENDU 2 --------------------
+
+ça a l'air tout petit comme ça mais non le kafka c'est long trust
+
+- Creating channels on servers, modifying channel’s information, removing them.
+    (XXXXXXXXXX)
+- Creating DM channel, Supprimer un ami
+    (XXXXXXXXXX)
+- Post messages on channels, delete them, see messages of a channel.
+    (XXXXXXXXXX)
+- Send private messages between users
+    (XXXXXXXXXX)
+- Allow admin actions on servers : delete message written by someone else
+    (XXXXXXXXXX)
+
+---------------------- RENDU 3 ---------------------------
+
+- Tag users on messages, add emoji and basic reactions.
+    (XXXXXXXXXX)
+- Deployer ?
+    (XXXXXXXXXX)
+- Faire les bonus ?
+    (XXXXXXXXXX)
