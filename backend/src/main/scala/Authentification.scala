@@ -20,6 +20,8 @@ import scala.util.{Success, Failure}
 import java.time.Instant
 import pdi.jwt.{JwtAlgorithm, JwtCirce, JwtClaim}
 import io.circe.Json
+import io.circe.parser.decode
+import io.circe.generic.auto._
 
 
 import at.favre.lib.crypto.bcrypt.BCrypt
@@ -86,11 +88,24 @@ object Authentification {
 
     def generateToken(user_id: UUID): String = {
         val claim = JwtClaim(
-            content = s"""{"user_id": $user_id}""",
+            content = s"""{"user_id": "${user_id.toString}"}""",
             expiration = Some(Instant.now.plusSeconds(3600).getEpochSecond),
             issuedAt = Some(Instant.now.getEpochSecond)
         )
         JwtCirce.encode(claim, key, algo)
+    }
+
+    // ENFIN REUUUUUUSSSSSSSi
+    def decodeToken(token: String): String = {
+        val decodedToken = JwtCirce.decode(token, key, Seq(algo)) 
+        decodedToken match {
+            case Success(claim) =>
+                val json = io.circe.parser.parse(claim.content).getOrElse(Json.Null)
+                val userIdFromToken = json.hcursor.get[String]("user_id").getOrElse("")
+                userIdFromToken
+            case Failure(error) =>
+                s"Error JWT: $error"
+            }
     }
 
     // ça fait un peu redondant avec la UserRoute mais bon jsavais pas trop comment faire autrement
@@ -172,6 +187,5 @@ object Authentification {
                 }
         }
     }
-    
 }
 

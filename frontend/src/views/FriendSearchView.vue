@@ -51,11 +51,6 @@ const addFriend = async (friend_id) => {
     return;
   }
 
-  const friendInput = {
-    user_id: user_id,
-    friend_id: friend_id
-  };
-
   // On protege les routes
   // seul un utilisateur connecté peut chercher des amis
   // donc on utilise son token
@@ -66,7 +61,7 @@ const addFriend = async (friend_id) => {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify(friendInput)
+      body: JSON.stringify({friend_id : friend_id})
     });
 
     if (!response.ok) {

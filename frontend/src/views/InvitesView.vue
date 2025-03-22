@@ -11,12 +11,8 @@ const user_id = localStorage.getItem("user_id");
 
 const fetchFriendRequests = async () => {
 
-  if (!user_id) {
-    return;
-  }
-
   try {
-    const response = await fetch(`http://localhost:8080/friends/requests/${user_id}`, {
+    const response = await fetch(`http://localhost:8080/friends/requests`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -39,18 +35,9 @@ const fetchFriendRequests = async () => {
 
 const acceptFriendRequest = async (friend_id) => {
 
-  if (!user_id) {
-    return;
-  }
   if (!friend_id) {
     return;
   }
-
-  // cf message dans le backend, on pourrait inverser les deux
-  const friendInput = {
-    user_id: user_id,
-    friend_id: friend_id
-  };
 
   // On protege les routes
   // seul un utilisateur connecté peut chercher des amis
@@ -62,7 +49,7 @@ const acceptFriendRequest = async (friend_id) => {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify(friendInput)
+      body: JSON.stringify({friend_id : friend_id})
     });
 
     if (!response.ok) {
@@ -79,18 +66,9 @@ const acceptFriendRequest = async (friend_id) => {
 
 const declineFriendRequest = async (friend_id) => {
 
-  if (!user_id) {
-    return;
-  }
   if (!friend_id) {
     return;
   }
-
-  // cf message dans le backend, on pourrait inverser les deux
-  const friendInput = {
-    user_id: user_id,
-    friend_id: friend_id
-  };
 
   // On protege les routes
   // seul un utilisateur connecté peut chercher des amis
@@ -102,7 +80,7 @@ const declineFriendRequest = async (friend_id) => {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify(friendInput)
+      body: JSON.stringify({friend_id : friend_id})
     });
 
     if (!response.ok) {
@@ -122,7 +100,7 @@ const declineFriendRequest = async (friend_id) => {
 
 const fetchGuildInvites = async () => {
   try {
-    const response = await fetch(`http://localhost:8080/guilds/invites/${user_id}`, {
+    const response = await fetch(`http://localhost:8080/guilds/invites`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -144,18 +122,9 @@ const fetchGuildInvites = async () => {
 
 const acceptGuildInvite = async (guild_id) => {
 
-  if (!user_id) {
-    return;
-  }
   if (!guild_id) {
     return;
   }
-
-  const guildInput = {
-    user_id: user_id,
-    guild_id: guild_id
-  };
-
 
   try {
     const response = await fetch(`http://localhost:8080/guilds/invites/accept`, {
@@ -164,7 +133,7 @@ const acceptGuildInvite = async (guild_id) => {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify(guildInput)
+      body: JSON.stringify({guild_id: guild_id})
     });
 
     if (!response.ok) {
@@ -181,18 +150,9 @@ const acceptGuildInvite = async (guild_id) => {
 
 const declineGuildInvite = async (guild_id) => {
 
-  if (!user_id) {
-    return;
-  }
   if (!guild_id) {
     return;
   }
-
-  // cf message dans le backend, on pourrait inverser les deux
-  const guildInput = {
-    user_id: user_id,
-    guild_id: guild_id
-  };
 
   // On protege les routes
   // seul un utilisateur connecté peut chercher des amis
@@ -204,7 +164,7 @@ const declineGuildInvite = async (guild_id) => {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify(guildInput)
+      body: JSON.stringify({guild_id: guild_id})
     });
 
     if (!response.ok) {

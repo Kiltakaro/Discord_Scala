@@ -235,6 +235,11 @@ const kickUser = async (kicked_id) => {
 }
 
 const deleteGuild = async () => {
+    const confirmation = confirm("Êtes-vous sûr de vouloir supprimer ce serveur ?");
+    if (!confirmation) {
+        return;
+    }
+
     try {
         const response = await fetch(`http://localhost:8080/guilds/${guildId.value}`, {
             method: "DELETE",
@@ -256,7 +261,7 @@ const deleteGuild = async () => {
         router.push("/serverList");
     } catch (error) {
         console.error(error);
-        alert("Erreur lors de la suppression");
+        router.push("/serverList");
     }
 };
 

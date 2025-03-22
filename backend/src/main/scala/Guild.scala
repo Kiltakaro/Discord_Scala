@@ -85,6 +85,12 @@ object Guild {
         } yield userRows
     }
 
+    // def deleteGuild(id: UUID, xa: Transactor[IO]) = {
+    //     val deleteUser = sql"DELETE FROM Guild WHERE guild_id = $id"
+    //     .update
+    //     .run
+    //     deleteUser.transact(xa)
+    // }
 
     /////////////////////////// GUILD ATTRIBUTS ///////////////////////////
 
@@ -248,10 +254,10 @@ object Guild {
         .transact(xa)
     }
 
-    def declineGuildInvite(guildInviteInput :GuildInviteInput, xa: Transactor[IO]): IO[Int] = {
+    def declineGuildInvite(user_id: UUID, guild_id:UUID, xa: Transactor[IO]): IO[Int] = {
         sql"""
             DELETE FROM User_Guild WHERE 
-            user_id = ${guildInviteInput.user_id} AND guild_id = ${guildInviteInput.guild_id}
+            user_id = ${user_id.toString} AND guild_id = ${guild_id.toString}
         """.update.run
         .transact(xa)
     }
@@ -393,30 +399,52 @@ object Guild {
             //     }
             
             // Suppression de guilde après vérification de l'ownership (WIP, ne reconnait pas encore l'owner de la guilde)
-            case req @ DELETE -> Root / UUIDVar(guildId) =>
-                req.headers.get(ci"Authorization").map(_.head) match {
-                    case Some(authHeader) =>
-                        val token = authHeader.value.replace("Bearer ", "")
-                        getUserIdFromJWT(token) match {
-                            case Some(requestingUserId) =>
-                                getGuildById(guildId, xa).flatMap {
-                                    case Some((_, _, _, ownerId)) if ownerId == requestingUserId =>
-                                        deleteGuild(guildId, xa).flatMap { result =>
-                                            Ok(Json.obj("message" -> Json.fromString("Guild deleted"), "rows_deleted" -> Json.fromInt(result)))
-                                        }
-                                    case Some(_) =>
-                                        Forbidden(Json.obj("error" -> Json.fromString("You are not the owner of this guild")))
-                                    case None =>
-                                        NotFound(Json.obj("error" -> Json.fromString("Guild not found")))
+            case r @ DELETE -> Root / UUIDVar(guildId) =>
+                r.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
+
+                        val userIdFromToken = Authentification.decodeToken(token)
+                        getGuildOwnerId(guildId, xa).flatMap {
+                            case Some(ownerId) =>
+                                if (ownerId.toString == userIdFromToken) {
+                                    deleteGuild(guildId, xa).flatMap { result =>
+                                        Ok(Json.obj("message" -> Json.fromString("Guild deleted"), "rows_deleted" -> Json.fromInt(result)))
+                                    }
+                                } else {
+                                    Forbidden(Json.obj("error" -> Json.fromString("You are not the owner of this guild")))
                                 }
                             case None =>
-                                // C'est pas le bon code de retour mais IMPOSSIBLE de faire fonctionner Unauthorized (skill issue)
-                                Forbidden(Json.obj("error" -> Json.fromString("Invalid token")))
+                                BadRequest(Json.obj("error" -> Json.fromString("Guild not found")))
                         }
-                    // Même problème ici
                     case None =>
-                        Forbidden(Json.obj("error" -> Json.fromString("Authorization header missing")))
+                        BadRequest(Json.obj("error" -> Json.fromString("Authorization header missing")))
                 }
+            
+            // case req @ DELETE -> Root / UUIDVar(guildId) =>
+            //     req.headers.get(ci"Authorization").map(_.head) match {
+            //         case Some(authHeader) =>
+            //             val token = authHeader.value.replace("Bearer ", "")
+            //             getUserIdFromJWT(token) match {
+            //                 case Some(requestingUserId) =>
+            //                     getGuildById(guildId, xa).flatMap {
+            //                         case Some((_, _, _, ownerId)) if ownerId == requestingUserId =>
+            //                             deleteGuild(guildId, xa).flatMap { result =>
+            //                                 Ok(Json.obj("message" -> Json.fromString("Guild deleted"), "rows_deleted" -> Json.fromInt(result)))
+            //                             }
+            //                         case Some(_) =>
+            //                             Forbidden(Json.obj("error" -> Json.fromString("You are not the owner of this guild")))
+            //                         case None =>
+            //                             NotFound(Json.obj("error" -> Json.fromString("Guild not found")))
+            //                     }
+            //                 case None =>
+            //                     // C'est pas le bon code de retour mais IMPOSSIBLE de faire fonctionner Unauthorized (skill issue)
+            //                     Forbidden(Json.obj("error" -> Json.fromString("Invalid token")))
+            //             }
+            //         // Même problème ici
+            //         case None =>
+            //             Forbidden(Json.obj("error" -> Json.fromString("Authorization header missing")))
+            //     }
 
 
             // kick un utilisateur
@@ -429,7 +457,7 @@ object Guild {
             ///////////////////////////// GESTION DES INVITATIONS ///////////////////
 
             // RAJOUTER DES TESTS POUR VOIR SI LA GUILD EXISTE
-            
+            // peut etre verifier que c'est un admin qui add ?
             case r @ POST -> Root / "invites" / "add" =>
                 r.as[GuildInviteInput].attempt.flatMap {
                     case Right(guildInput) =>
@@ -446,14 +474,26 @@ object Guild {
                             BadRequest("IDs must not be empty")
                         }
                     case Left(_) =>
-                        BadRequest("Bad Request. Format { user_id: String, friend_id: String }")
+                        BadRequest("Bad Request. Format { user_id: String, guild_id: String }")
                     }
 
             
             // pour afficher les requests "en attente" et de qui elles viennent
-            case GET -> Root / "invites" / UUIDVar(uuid) =>
-                getGuildInvitesGuildnames(uuid, xa).flatMap { invites =>
-                    Ok(invites.asJson)
+            case r @ GET -> Root / "invites" =>
+                r.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
+
+                        val userIdFromToken = Authentification.decodeToken(token)
+                        r.as[Json].flatMap { json =>
+                            val guild_id = json.hcursor.get[String]("guild_id").getOrElse("")
+                            getGuildInvitesGuildnames(UUID.fromString(userIdFromToken), xa).flatMap { result =>
+                                Ok(s"Rows affected: $result")
+                            }
+                        }
+
+                    case None =>
+                        BadRequest("Token not found")
                 }
 
 
@@ -461,32 +501,20 @@ object Guild {
             // j'hésite a en faire une route DELETE  
             // psk techniquement, ça fait supprimer un truc
             case r @ POST -> Root / "invites" / "decline" =>
-                r.as[GuildInviteInput].attempt.flatMap {
-                        case Right(guildInput) =>
-                            if (guildInput.user_id.nonEmpty && guildInput.guild_id.nonEmpty) {
-                                declineGuildInvite(guildInput, xa).flatMap { result =>
-                                    Ok(s"Rows affected: $result")
-                                }
-                            } else {
-                                BadRequest("IDs must not be empty")
-                            }
-                        case Left(_) =>
-                            BadRequest("Bad Request. Format { user_id: String, friend_id: String }")
-                }
+                r.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
 
-
-            case r @ POST -> Root / "invites" / "accept" =>
-                r.as[GuildInviteInput].attempt.flatMap {
-                    case Right(guildInput) =>
-                        if (guildInput.user_id.nonEmpty && guildInput.guild_id.nonEmpty) {
-                            acceptGuildInvite(guildInput, xa).flatMap { result =>
+                        val userIdFromToken = Authentification.decodeToken(token)
+                        r.as[Json].flatMap { json =>
+                            val guild_id = json.hcursor.get[String]("guild_id").getOrElse("")
+                            declineGuildInvite(UUID.fromString(userIdFromToken), UUID.fromString(guild_id), xa).flatMap { result =>
                                 Ok(s"Rows affected: $result")
                             }
-                        } else {
-                            BadRequest("IDs must not be empty")
                         }
-                    case Left(_) =>
-                        BadRequest("Bad Request. Format { user_id: String, friend_id: String }")
+
+                    case None =>
+                        BadRequest("Token not found")
                 }
 
 
