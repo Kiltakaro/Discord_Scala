@@ -233,11 +233,11 @@ object Guild {
     // Version individuelle : même système que les demandes d'ami
 
     // on pourrait rajouter (qui a envoyé l'invitation) pour plus tard
-    def sendGuildInvite(guildInviteInput: GuildInviteInput, xa: Transactor[IO]): IO[Int] = {
+    def sendGuildInvite(user_id: UUID, guild_id: UUID, xa: Transactor[IO]): IO[Int] = {
         val insertGuildInvite =
         sql"""
             INSERT INTO User_Guild (user_id, guild_id, invite_accepted)
-            VALUES (${guildInviteInput.user_id}, ${guildInviteInput.guild_id}, 0)
+            VALUES (${user_id.toString}, ${guild_id.toString}, 0)
         """.update.run
         insertGuildInvite.transact(xa)
     }
@@ -458,23 +458,29 @@ object Guild {
             // RAJOUTER DES TESTS POUR VOIR SI LA GUILD EXISTE
             // peut etre verifier que c'est un admin qui add ?
             case r @ POST -> Root / "invites" / "add" =>
-                r.as[GuildInviteInput].attempt.flatMap {
-                    case Right(guildInput) =>
-                        if (guildInput.user_id.nonEmpty && guildInput.guild_id.nonEmpty) {
-                            getGuildById(UUID.fromString(guildInput.guild_id), xa).flatMap {
-                                case Some(_) =>
-                                    sendGuildInvite(guildInput, xa).flatMap { result =>
-                                        Ok(s"Rows affected: $result")
-                                    }
-                                case None =>
-                                    BadRequest("Guild not found")
+
+                r.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
+
+                        val userIdFromToken = Authentification.decodeToken(token)
+                        r.as[Json].flatMap { json =>
+                            val guild_id = json.hcursor.get[String]("guild_id").getOrElse("")
+                            if (guild_id.isEmpty) {
+                                BadRequest("Guild ID must not be empty")
                             }
-                        } else {
-                            BadRequest("IDs must not be empty")
+                            val invited_id = json.hcursor.get[String]("invited_id").getOrElse("")
+                            if (invited_id.isEmpty) {
+                                BadRequest("Invited ID must not be empty")
+                            }
+
+                            sendGuildInvite(UUID.fromString(invited_id), UUID.fromString(guild_id), xa).flatMap { result =>
+                                Ok(s"Rows affected: $result")
+                            }
                         }
-                    case Left(_) =>
-                        BadRequest("Bad Request. Format { user_id: String, guild_id: String }")
-                    }
+                    case None =>
+                        BadRequest("Token not found")
+                }
 
             
             // pour afficher les requests "en attente" et de qui elles viennent

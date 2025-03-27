@@ -31,7 +31,6 @@ const createGuild = async () => {
 
     if (response.ok) {
       const data = await response.json();
-      alert("Serveur créé");
       router.push(`/server/${data.guildId}`); // Redirige vers le nouveau serveur
     } else {
       const errorData = await response.json();

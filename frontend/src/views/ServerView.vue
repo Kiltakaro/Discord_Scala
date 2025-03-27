@@ -66,17 +66,9 @@ const searchUsers = async () => {
 // soit un truc qui marche temporairement
 // soit un truc qui est permanent avec une requete a l'api
 const inviteUserToGuild = async (invited_id) => {
-    if (!user_id) {
-        return;
-    }
     if (!invited_id) {
         return;
     }
-
-    const invitedInput = {
-        user_id: invited_id,
-        guild_id: guildId.value,
-    };
 
     // On protege les routes
     // seul un utilisateur connecté peut chercher des amis
@@ -102,7 +94,7 @@ const inviteUserToGuild = async (invited_id) => {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`,
             },
-            body: JSON.stringify(invitedInput)
+            body: JSON.stringify({invited_id: invited_id, guild_id: guildId.value})
         });
 
         if (!inviteResponse.ok) {

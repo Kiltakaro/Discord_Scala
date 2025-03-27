@@ -44,9 +44,6 @@ const searchUsers = async () => {
 // soit un truc qui est permanent avec une requete a l'api
 const addFriend = async (friend_id) => {
 
-  if (!user_id) {
-    return;
-  }
   if (!friend_id) {
     return;
   }
