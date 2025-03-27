@@ -1,6 +1,8 @@
 <script setup>
+// tuto context menu (goatesque): https://medium.com/@sj.anyway/custom-right-click-context-menu-in-vue3-b323a3913684
 import { ref, onMounted } from 'vue';
 import {useRoute, useRouter} from 'vue-router';
+import MenuView from "@/views/MenuView.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -12,9 +14,20 @@ const user_id = localStorage.getItem("user_id");
 const owner = ref(false);
 const users = ref([]);
 
+const channels_in_guild = ref([]);
 // pour les invitations
 const username = ref('');
 const users_in_guild = ref([]);
+
+// Context menu variables
+// ON SE SERT DE ÇA LE + POSSIBLE SI ON PEUT, ÇA ÉVITE DE SPAM LES BOUTONS PARTOUT
+const showMenu = ref(false);
+const targetChannelId = ref("");
+const menuX = ref(0);
+const menuY = ref(0);
+const contextMenuActions = ref([
+    { label: 'Supprimer', action: 'delete'}
+]);
 
 
 const searchUsers = async () => {
@@ -159,6 +172,46 @@ const fetchUsersInGuild = async () => {
     }
 };
 
+const fetchChannelsInGuild = async() => {
+    try {
+        const response = await fetch(`http://localhost:8080/channels/${guildId.value}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        channels_in_guild.value = await response.json();
+    } catch (error) {
+        errorMessage.value = `Erreur lors de la récupération des channels : ${error}`;
+    }
+};
+
+const deleteChannel = async(channelId) => {
+    try {
+        const response = await fetch(`http://localhost:8080/channels/${guildId.value}/${channelId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        await fetchChannelsInGuild();
+    } catch (error) {
+        errorMessage.value = `Erreur lors de la suppression du channel : ${error}`;
+    }
+}
+
+const getChannelMessages = async (channelId) => {
+    // TODO
+}
+
 const banUser = async (banned_id) => {
 
     if (!banned_id) {
@@ -265,18 +318,47 @@ const deleteGuild = async () => {
     }
 };
 
-const banListRedirect = async (guild_id) => {
-    router.push(`/server/${guild_id}/bans`);
+// Affiche un menu en faisant clic droit sur un channel
+const displayMenu = (event, channelId) => {
+    event.preventDefault();
+    showMenu.value = true;
+    targetChannelId.value = channelId;
+    menuX.value = event.clientX;
+    menuY.value = event.clientY;
+};
+
+// Permet de fermer le menu (pas entièrement fonctionnel pour le moment)
+const closeMenu = () => {
+    showMenu.value = false;
+};
+
+// Ici on peut éventuellement gérer d'autres actions genre edit, etc
+const handleMenuActions = (action) => {
+    console.log(action);
+    if(action === 'delete') {
+        deleteChannel(targetChannelId.value);
+    }
+    closeMenu();
+};
+
+const banListRedirect = async () => {
+    await router.push(`/server/${guildId.value}/bans`);
+};
+
+const createChannelRedirect = async () => {
+    await router.push(`/server/${guildId.value}/create-channel`);
 };
 
 onMounted(() => {
     fetchGuild();
     fetchUsersInGuild();
+    fetchChannelsInGuild();
 });
 </script>
 
 <template>
     <div class="pr-64">
+        <div class="fixed bg-transparent w-full h-full" @click="closeMenu" v-if="showMenu"></div>
         <div class="min-h-screen flex flex-col items-center bg-gray-900 text-white p-6">
             <h1 class="text-3xl font-bold mb-6">
                 Serveur: {{ guild?.guild_name || "Chargement..." }}
@@ -311,6 +393,33 @@ onMounted(() => {
                             trouvé</div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Liste des channels -->
+            <div
+                class="fixed left-0 top-2 bottom-0 w-64 bg-gray-800 p-4 border-l-4 border-gray-700 overflow-y-auto mt-16">
+                <h2 class="text-xl font-bold mb-4">Channels</h2>
+                <ul>
+                    <li v-for="channel in channels_in_guild" :key="channel.id"
+                        class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700"
+                        @click="getChannelMessages(channel.id)"
+                        @contextmenu.prevent="displayMenu($event, channel.id)">
+                    {{channel.name}}
+                    </li>
+                </ul>
+                <button v-if="owner" @click="createChannelRedirect()"
+                    class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
+                    Nouveau channel
+                </button>
+
+            <!-- affichage du menu clic droit -->
+            <MenuView
+                v-if="showMenu"
+                :actions="contextMenuActions"
+                @action-clicked="handleMenuActions"
+                :x="menuX"
+                :y="menuY"
+            />
             </div>
 
             <!-- Liste des membres du serveur -->

@@ -62,6 +62,7 @@ object Main extends IOApp {
                         "/admin" -> Admin.adminRoutes,
                         "/users" -> User.userRoutes(xa),
                         "/guilds" -> Guild.guildRoutes(xa),
+                        "/channels" -> Channel.channelRoutes(xa),
                         "/auth" -> Authentification.authentificationRoutes(xa),
                         "/friends" -> Friend.friendRoutes(xa)
                     ).orNotFound,

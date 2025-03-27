@@ -23,7 +23,6 @@ import java.util.UUID
 import doobie.util.meta.Meta
 
 
-
 // ça sert a rien pour le moment
 case class Guild(guild_name: String)
 
@@ -325,7 +324,7 @@ object Guild {
     /////////////////////////// GUILD ROUTES ///////////////////////////
 
     // PLUS BESOIN DE METTRE Guild DANS LA ROUTE CAR IL EST DANS LE ROUTEUR
-    def guildRoutes(xa: Transactor[IO])= {
+    def guildRoutes(xa: Transactor[IO]) = {
         HttpRoutes.of[IO] {
             
             // Création de guilde
