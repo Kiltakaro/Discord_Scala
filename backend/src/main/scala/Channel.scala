@@ -35,7 +35,7 @@ object Channel {
             VALUES (${channel.name}, ${channel.friendshipId}, ${channel.guildId})
         """.update.run.transact(xa)
     }
-    
+
     // Faut voir si on ajoute des trucs à modifier pour un channel, pour le moment il n'y a que le nom de modifiable
     def updateChannel(channelId: UUID, name: String, xa: Transactor[IO]): IO[Int] = {
         sql"""
@@ -55,7 +55,7 @@ object Channel {
     // ROUTES
     def channelRoutes(xa: Transactor[IO]): HttpRoutes[IO] = {
         HttpRoutes.of[IO] {
-            case req @ GET -> Root / UUIDVar(guildId) =>
+            case req@GET -> Root / UUIDVar(guildId) =>
                 req.headers.get(ci"Authorization") match {
                     case Some(header) =>
                         val token = header.head.value.stripPrefix("Bearer ")
@@ -69,7 +69,7 @@ object Channel {
                         BadRequest("Token not found")
                 }
 
-            case req @ POST -> Root / UUIDVar(guildId) =>
+            case req@POST -> Root / UUIDVar(guildId) =>
                 req.headers.get(ci"Authorization") match {
                     case Some(header) =>
                         val token = header.head.value.stripPrefix("Bearer ")
@@ -77,7 +77,7 @@ object Channel {
                         val userIdFromToken = Authentification.decodeToken(token)
                         req.as[ChannelModel].attempt.flatMap {
                             case Right(channel: ChannelModel) =>
-                                if(channel.name.isEmpty) {
+                                if (channel.name.isEmpty) {
                                     BadRequest("Channel name must not be empty")
                                 }
                                 else {
@@ -93,7 +93,7 @@ object Channel {
                         BadRequest("Token not found")
                 }
 
-            case req @ DELETE -> Root / UUIDVar(guildId) / UUIDVar(channelId) =>
+            case req@DELETE -> Root / UUIDVar(guildId) / UUIDVar(channelId) =>
                 req.headers.get(ci"Authorization") match {
                     case Some(header) =>
                         val token = header.head.value.stripPrefix("Bearer ")
@@ -109,6 +109,7 @@ object Channel {
 
                     case None =>
                         BadRequest("Token not found")
+                }
         }
     }
-}
+}    

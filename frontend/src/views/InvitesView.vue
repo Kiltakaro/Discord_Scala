@@ -107,7 +107,6 @@ const fetchGuildInvites = async () => {
         "Authorization": `Bearer ${token}`,
       },
     });
-
     if (!response.ok) {
       return;
     }
@@ -188,7 +187,7 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen flex flex-col items-center bg-gray-900 text-white space-y-16 p-8 overflow-auto">
-    
+
     <!-- Amis -->
     <div class="flex flex-col items-center space-y-4 w-full">
       <h1 class="text-4xl font-bold">Demandes d'amis</h1>

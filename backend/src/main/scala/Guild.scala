@@ -261,12 +261,12 @@ object Guild {
         .transact(xa)
     }
 
-    def acceptGuildInvite(guildInviteInput: GuildInviteInput, xa: Transactor[IO]): IO[Int] = {
+    def acceptGuildInvite(user_id: UUID, guild_id:UUID, xa: Transactor[IO]): IO[Int] = {
         sql"""
             UPDATE User_Guild SET invite_accepted = 1 WHERE 
-            user_id = ${guildInviteInput.user_id} AND guild_id = ${guildInviteInput.guild_id}
+            user_id = ${user_id.toString} AND guild_id = ${guild_id.toString}
         """.update.run
-        .transact(xa)
+          .transact(xa)
     }
 
 
@@ -484,9 +484,26 @@ object Guild {
                         val token = header.head.value.stripPrefix("Bearer ")
 
                         val userIdFromToken = Authentification.decodeToken(token)
+                        // r.as[Json].flatMap { json =>
+                            // val guild_id = json.hcursor.get[String]("guild_id").getOrElse("")
+                            getGuildInvitesGuildnames(UUID.fromString(userIdFromToken), xa).flatMap { result =>
+                                Ok(result.asJson)
+                            }
+                        // }
+
+                    case None =>
+                        BadRequest("Token not found")
+                }
+
+            case r @ POST -> Root / "invites" / "accept" =>
+                r.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
+
+                        val userIdFromToken = Authentification.decodeToken(token)
                         r.as[Json].flatMap { json =>
                             val guild_id = json.hcursor.get[String]("guild_id").getOrElse("")
-                            getGuildInvitesGuildnames(UUID.fromString(userIdFromToken), xa).flatMap { result =>
+                            acceptGuildInvite(UUID.fromString(userIdFromToken), UUID.fromString(guild_id), xa).flatMap { result =>
                                 Ok(s"Rows affected: $result")
                             }
                         }
@@ -494,7 +511,6 @@ object Guild {
                     case None =>
                         BadRequest("Token not found")
                 }
-
 
             // Refuse une friend request
             // j'hésite a en faire une route DELETE  

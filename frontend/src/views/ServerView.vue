@@ -66,7 +66,6 @@ const searchUsers = async () => {
 // soit un truc qui marche temporairement
 // soit un truc qui est permanent avec une requete a l'api
 const inviteUserToGuild = async (invited_id) => {
-
     if (!user_id) {
         return;
     }
@@ -380,10 +379,10 @@ onMounted(() => {
                         class="px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 w-full max-w-4xl">
-                        <div v-for="user in users" :key="user.user_id"
+                        <div v-for="user in users" :key="user.uuid"
                             class="bg-gray-800 p-6 rounded-lg shadow-md flex justify-between items-center">
                             <span class="text-xl font-bold">{{ user.username }}</span>
-                            <button @click="inviteUserToGuild(user.user_id)"
+                            <button @click="inviteUserToGuild(user.uuid)"
                                 class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
                                 Ajouter
                             </button>
@@ -414,7 +413,7 @@ onMounted(() => {
 
             <!-- affichage du menu clic droit -->
             <MenuView
-                v-if="showMenu"
+                v-if="showMenu && owner"
                 :actions="contextMenuActions"
                 @action-clicked="handleMenuActions"
                 :x="menuX"
