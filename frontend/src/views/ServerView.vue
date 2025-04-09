@@ -21,12 +21,19 @@ const users_in_guild = ref([]);
 
 // Context menu variables
 // ON SE SERT DE ÇA LE + POSSIBLE SI ON PEUT, ÇA ÉVITE DE SPAM LES BOUTONS PARTOUT
-const showMenu = ref(false);
-const targetChannelId = ref("");
+const showMenuChannel = ref(false);
+const showMenuUser = ref(false);
+const targetChannelId = ref(""); // Utilisé pour déterminer sur quel channel on a fait clic droit
+const targetUserId = ref(""); // Sur quel user on a fait clic droit
 const menuX = ref(0);
 const menuY = ref(0);
-const contextMenuActions = ref([
+const contextMenuActionsChannel = ref([
     { label: 'Supprimer', action: 'delete'}
+]);
+
+const contextMenuActionsUser = ref([
+    { label: 'Expulser', action: 'kick' },
+    { label: 'Bannir', action: 'ban' }
 ]);
 
 
@@ -310,27 +317,50 @@ const deleteGuild = async () => {
 };
 
 // Affiche un menu en faisant clic droit sur un channel
-const displayMenu = (event, channelId) => {
+const displayMenuChannel = (event, channelId) => {
     event.preventDefault();
-    showMenu.value = true;
+    showMenuChannel.value = true;
     targetChannelId.value = channelId;
     menuX.value = event.clientX;
     menuY.value = event.clientY;
 };
 
+const displayMenuUser = (event, userId) => {
+    if(user_id === userId) return;
+
+    event.preventDefault();
+    showMenuUser.value = true;
+    targetUserId.value = userId;
+    menuX.value = event.clientX;
+    menuY.value = event.clientY;
+}
+
 // Permet de fermer le menu (pas entièrement fonctionnel pour le moment)
 const closeMenu = () => {
-    showMenu.value = false;
+    showMenuChannel.value = false;
+    showMenuUser.value = false;
 };
 
 // Ici on peut éventuellement gérer d'autres actions genre edit, etc
-const handleMenuActions = (action) => {
-    console.log(action);
+const handleMenuActionsChannel = (action) => {
     if(action === 'delete') {
         deleteChannel(targetChannelId.value);
     }
     closeMenu();
 };
+
+const handleMenuActionsUser = (action) => {
+    switch (action) {
+        case 'kick':
+            kickUser(targetUserId.value);
+            break;
+
+        case 'ban':
+            banUser(targetUserId.value);
+            break;
+    }
+    closeMenu();
+}
 
 const banListRedirect = async () => {
     await router.push(`/server/${guildId.value}/bans`);
@@ -349,7 +379,7 @@ onMounted(() => {
 
 <template>
     <div class="pr-64">
-        <div class="fixed bg-transparent w-full h-full" @click="closeMenu" v-if="showMenu"></div>
+        <div class="fixed bg-transparent w-full h-full" @click="closeMenu" v-if="showMenuUser || showMenuChannel"></div>
         <div class="min-h-screen flex flex-col items-center bg-gray-900 text-white p-6">
             <h1 class="text-3xl font-bold mb-6">
                 Serveur: {{ guild?.guild_name || "Chargement..." }}
@@ -394,7 +424,7 @@ onMounted(() => {
                     <li v-for="channel in channels_in_guild" :key="channel.id"
                         class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700"
                         @click="getChannelMessages(channel.id)"
-                        @contextmenu.prevent="displayMenu($event, channel.id)">
+                        @contextmenu.prevent="displayMenuChannel($event, channel.id)">
                     {{channel.name}}
                     </li>
                 </ul>
@@ -403,11 +433,11 @@ onMounted(() => {
                     Nouveau channel
                 </button>
 
-            <!-- affichage du menu clic droit -->
+            <!-- affichage du menu clic droit pour les channels -->
             <MenuView
-                v-if="showMenu && owner"
-                :actions="contextMenuActions"
-                @action-clicked="handleMenuActions"
+                v-if="showMenuChannel && owner"
+                :actions="contextMenuActionsChannel"
+                @action-clicked="handleMenuActionsChannel"
                 :x="menuX"
                 :y="menuY"
             />
@@ -422,21 +452,19 @@ onMounted(() => {
                     Supprimer le serveur
                 </button>
                 <ul>
-                    <li v-for="user in users_in_guild" :key="user.user_id"
-                        class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700">
+                    <li v-for="user in users_in_guild" :key="user.uuid"
+                        class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700"
+                        @contextmenu.prevent="displayMenuUser($event, user.uuid)">
                         <span class="flex-1">{{ user.username }}</span>
 
                         <!-- Visible que pour l'admin + empêche l'admin de se ban / kick lui-même -->
-                        <div v-if="owner && user_id !== user.uuid" class="flex space-x-2">
-                            <button @click="kickUser(user.user_id)"
-                                class="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg">
-                                Kick
-                            </button>
-                            <button @click="banUser(user.user_id)"
-                                class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg">
-                                Ban
-                            </button>
-                        </div>
+                        <MenuView
+                            v-if="showMenuUser && owner"
+                            :actions="contextMenuActionsUser"
+                            @action-clicked="handleMenuActionsUser"
+                            :x="menuX"
+                            :y="menuY"
+                        />
                     </li>
                 </ul>
                 <button v-if="owner"
