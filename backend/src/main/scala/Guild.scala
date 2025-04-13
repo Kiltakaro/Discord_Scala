@@ -145,15 +145,17 @@ object Guild {
 
     // Users
 
+    // DUPLICATION DE CODE non fonctionnelle ????
+    // on a deja decodeTOken dans Authentification 
     // Récupère l'ID de l'utilisateur connecté via son token JWT (pour l'instant ne fonctionne pas)
-    def getUserIdFromJWT(token: String): Option[UUID] = {
-        println(s"Received Token: $token")
-        JwtCirce.decode(token, "secretkey", Seq(JwtAlgorithm.HS256)).toOption.flatMap { decoded =>
-            parse(decoded.content).toOption.flatMap { json =>
-                json.hcursor.get[String]("user_id").toOption.map(UUID.fromString)
-            }
-        }  
-    }
+    // def getUserIdFromJWT(token: String): Option[UUID] = {
+    //     println(s"Received Token: $token")
+    //     JwtCirce.decode(token, "secretkey", Seq(JwtAlgorithm.HS256)).toOption.flatMap { decoded =>
+    //         parse(decoded.content).toOption.flatMap { json =>
+    //             json.hcursor.get[String]("user_id").toOption.map(UUID.fromString)
+    //         }
+    //     }  
+    // }
 
     def addUserToGuild(userId: UUID, guildId: UUID, xa: Transactor[IO]): IO[Int] = {
         val addUser = sql"INSERT INTO User_Guild (user_id, guild_id) VALUES ($userId, $guildId)"

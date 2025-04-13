@@ -99,6 +99,7 @@ object Channel {
                         val token = header.head.value.stripPrefix("Bearer ")
 
                         val userIdFromToken = Authentification.decodeToken(token)
+                        // ajouter verif si admin
                         deleteChannel(channelId, xa).flatMap {
                             case 0 =>
                                 NotFound(s"Pas de channel trouvé avec l'ID $channelId")

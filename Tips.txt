@@ -21,24 +21,50 @@ vous allez créer un compte mais osef
 dans un terminal
 clickhouse server
 
-////////////////////// DERNIÈRES NEWS //////////////////////////
+////////////////////// TUTO KAFKA //////////////////////////
 
-On a une route not found pour la méthode GET, est-ce nécessaire d'en créer une pour POST, DELETE et PUT ?
-Le DEFAULT now() semble ne pas marcher du tout avec le fichier sql pour une raison qui m'échappe totalement, si quelqu'un peut tester ça de son côté ce serait cool
+just start
+
+ou 
+
+just start-all
+(ça permet d'avoir le client clickhouse en plus et le consumer du kafka)
+
+faudra surement dl just
+
+sinon l'explication
+
+telecharger ça si jl'ai pas déjà déposé dans le git
+https://dlcdn.apache.org/kafka/3.9.0/kafka_2.13-3.9.0.tgz
+
+# configuration
+kafka_2.13-3.9.0/bin/kafka-storage.sh format \
+    --config kafka_2.13-3.9.0/config/kraft/server.properties \
+    --cluster-id $(kafka_2.13-3.9.0/bin/kafka-storage.sh random-uuid)
+
+# lancement
+kafka_2.13-3.9.0/bin/kafka-server-start.sh kafka_2.13-3.9.0/config/kraft/server.properties
+
+### Si besoin
+# pour consume 
+kafka_2.13-3.9.0/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic messages --from-beginning
+
+Ne toucher qu'à "server.properties"  (à voir si mon commentaire et encore vrai plus tard)
+# j'ai pas tout compris mais en gros ça gere tout
+# alors que broker.properties c'est pour faire des brokers séparés 
 
 
-avec cet exemple de code on peut utiliser le .unique 
-dans une querry ce qui facilitera peut etre la suite
-"If we know for sure that the query will return exactly one row, we can use the unique method:"
 
-    // def findActorByIdProgram(id: Int): IO[Actor] = {
-    //   val findActorById: doobie.ConnectionIO[Actor] =
-    //     sql"select id, name from actors where id = $id".query[Actor].unique
-    //   findActorById.transact(xa)
-    // }
+//// RECAP ///
 
+cd frontend
+npm run dev
 
-//////////////////// À FAIRE POUR LA BDD /////////////////////
+cd database
+clickhouse-server
 
-Voir pour assurer l'unicité des UUID (generateUUIDv4() a déjà une sécu mais si jamais on veut forcer un ID faut faire gaffe)
++ kafka a faire
+
+cb backend
+sbt run
 

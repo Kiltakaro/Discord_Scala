@@ -53,6 +53,7 @@ libraryDependencies ++= Seq(
     "org.http4s" %% "http4s-circe" % http4sVersion,
 
     "co.fs2" %% "fs2-core" % fs2Version,
+    "com.github.fd4s" %% "fs2-kafka" % "3.7.0",
 
     // c'est pour faire des logins avec les JWT 
     // comme on utilise un truc similaire en python pour le pfe ça devrait aller

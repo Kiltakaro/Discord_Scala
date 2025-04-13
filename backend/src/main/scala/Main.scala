@@ -64,12 +64,20 @@ object Main extends IOApp {
                         "/guilds" -> Guild.guildRoutes(xa),
                         "/channels" -> Channel.channelRoutes(xa),
                         "/auth" -> Authentification.authentificationRoutes(xa),
-                        "/friends" -> Friend.friendRoutes(xa)
+                        "/friends" -> Friend.friendRoutes(xa),
+                        "/messages" -> Message.messageRoutes(xa),
                     ).orNotFound,
                     corsConfig
                 )
             )
-            startServer(finalHttpApp)
+
+
+            for {
+                _ <- MessageConsumer.runConsumer(xa).start // consumer en parallèle
+                exitCode <- startServer(finalHttpApp) // le serveur HTTP comme d'hab
+            } yield exitCode
+
+            // startServer(finalHttpApp)
         }
     }
 }

@@ -32,7 +32,7 @@ metadata/
 format_schemas
 clickhouse
 uuid
-Justfile
+kafka_2.13-3.9.0.tgz
 
 #############################
 .bsp/sbt.json
