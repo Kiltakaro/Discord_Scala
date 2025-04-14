@@ -13,6 +13,7 @@ const token = localStorage.getItem("token");
 const user_id = localStorage.getItem("user_id");
 const owner = ref(false);
 const users = ref([]);
+const messages = ref([]);
 
 const channels_in_guild = ref([]);
 // pour les invitations
@@ -207,7 +208,29 @@ const deleteChannel = async(channelId) => {
 }
 
 const getChannelMessages = async (channelId) => {
-    // TODO
+    
+    if (!channelId) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`http://localhost:8080/messages/channel/${channelId}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            return;
+        }
+
+        messages.value = await response.json();
+
+    } catch (error) {
+        errorMessage.value = "Erreur lors du chargement du channel : " + error;
+    }
 }
 
 const banUser = async (banned_id) => {
@@ -308,7 +331,6 @@ const deleteGuild = async () => {
             throw new Error("Failed to delete the server");
         }
 
-        alert("Serveur supprimé");
         router.push("/serverList");
     } catch (error) {
         errorMessage.value = "Erreur de la suppression du serveur : " + error;
@@ -378,7 +400,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="pr-64">
+    <div class="pr-64 pl-64">
         <div class="fixed bg-transparent w-full h-full" @click="closeMenu" v-if="showMenuUser || showMenuChannel"></div>
         <div class="min-h-screen flex flex-col items-center bg-gray-900 text-white p-6">
             <h1 class="text-3xl font-bold mb-6">
@@ -389,6 +411,24 @@ onMounted(() => {
             <p> Voici un texte hyper long pour tester si le padding right marche bien et si la barre d'utilisateurs ne
                 va pas passer par dessus le texte et le rendre illisible psk ça serait vraiment dommage de pas pouvoir
                 observer un tel message</p>
+            
+            <!-- Affichage des messages -->
+            <div class="mt-6 w-full bg-gray-800 p-4 rounded-lg">
+                <h2 class="text-xl font-bold mb-4">Messages</h2>
+                <ul>
+                    <li v-for="message in messages" :key="message.id" class="mb-2">
+                        <div class="flex items-start space-x-4">
+                            <!-- Il va falloir changer l'id pour le username -->
+                            <div class="text-sm font-bold text-purple-400">{{ message.sender_id }}</div>
+                            <!-- Faut aussi afficher le msg a droite si L'utilisateur actuel est celui qui a envoyé le msg -->
+                            <div class="text-sm text-blue-300">{{ message.content }}</div>
+                            <!-- Faut mettre un format de date + stylé -->
+                            <!-- Faudrait peut etre gerer le changement de date en fonction de ou vit l'utilisateur -->
+                            <div class="text-xs text-gray-300 ml-auto">{{ message.sent_at }}</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
 
 
             <!-- Ajouter des utilisateurs (Réservé a l'admin du serveur) -->
@@ -418,13 +458,13 @@ onMounted(() => {
 
             <!-- Liste des channels -->
             <div
-                class="fixed left-0 top-2 bottom-0 w-64 bg-gray-800 p-4 border-l-4 border-gray-700 overflow-y-auto mt-16">
+                class="fixed left-0 top-2 bottom-0 w-64 bg-gray-800 p-4 border-r-4 border-gray-700 overflow-y-auto mt-16">
                 <h2 class="text-xl font-bold mb-4">Channels</h2>
                 <ul>
-                    <li v-for="channel in channels_in_guild" :key="channel.id"
+                    <li v-for="channel in channels_in_guild" :key="channel.channelId"
                         class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700"
-                        @click="getChannelMessages(channel.id)"
-                        @contextmenu.prevent="displayMenuChannel($event, channel.id)">
+                        @click="getChannelMessages(channel.channelId)"
+                        @contextmenu.prevent="displayMenuChannel($event, channel.channelId)">
                     {{channel.name}}
                     </li>
                 </ul>

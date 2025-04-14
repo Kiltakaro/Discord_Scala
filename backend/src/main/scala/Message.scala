@@ -16,7 +16,7 @@ import org.http4s.circe.CirceEntityDecoder._
 import java.util.UUID
 
 
-case class MessageOutputModel(channel_id: UUID, sender_id:UUID, content: String, sent_at: String)
+case class MessageOutputModel(message_id: UUID, channel_id: UUID, sender_id:UUID, content: String, sent_at: String)
 
 object Message {
     implicit val uuidMeta: Meta[UUID] = Meta[String].imap[UUID](UUID.fromString)(_.toString)
@@ -66,7 +66,7 @@ object Message {
                         req.as[Json].flatMap { json =>
                             val content = json.hcursor.get[String]("content").getOrElse("")
 
-                            val message = MessageOutputModel(
+                            val message = MessageInputModel(
                                 channel_id = channelId, 
                                 sender_id = UUID.fromString(userIdFromToken),
                                 content = content,
