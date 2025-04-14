@@ -3,8 +3,8 @@ import { ref, onMounted } from 'vue';
 
 const friendRequests = ref([]);
 const guildInvites = ref([]);
+const errorMessage = ref("");
 const token = localStorage.getItem("token");
-const user_id = localStorage.getItem("user_id");
 
 
 ///////////////////// FRIENDS //////////////////////
@@ -28,7 +28,7 @@ const fetchFriendRequests = async () => {
     console.log(friendRequests.value);
 
   } catch (error) {
-    console.log(error);
+    errorMessage.value = "Erreur lors du chargement des requetes d'amis" + error;
   }
 };
 
@@ -60,7 +60,7 @@ const acceptFriendRequest = async (friend_id) => {
     fetchFriendRequests();
 
   } catch (error) {
-    console.log(error);
+    errorMessage.value = "Erreur lors acceptation de la demande d'ami" + error;
   }
 };
 
@@ -91,7 +91,7 @@ const declineFriendRequest = async (friend_id) => {
     fetchFriendRequests();
 
   } catch (error) {
-    console.log(error);
+    errorMessage.value = "Erreur lors du refus de la demande d'ami " + error;
   }
 
 };
@@ -143,7 +143,7 @@ const acceptGuildInvite = async (guild_id) => {
     fetchGuildInvites();
 
   } catch (error) {
-    console.log(error);
+    errorMessage.value = "Erreur lors de l'acceptaion pour rejoindre un serveur" + error;
   }
 }
 
@@ -174,7 +174,7 @@ const declineGuildInvite = async (guild_id) => {
     fetchGuildInvites();
 
   } catch (error) {
-    console.log(error);
+    errorMessage.value = "Erreur lors du refus de l'invitation à un serveur " + error;
   }
 }
 
@@ -187,6 +187,7 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen flex flex-col items-center bg-gray-900 text-white space-y-16 p-8 overflow-auto">
+    <div v-if="errorMessage" class="text-red-500">{{ errorMessage }}</div>
 
     <!-- Amis -->
     <div class="flex flex-col items-center space-y-4 w-full">

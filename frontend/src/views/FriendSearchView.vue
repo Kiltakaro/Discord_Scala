@@ -4,7 +4,7 @@ import { ref } from 'vue';
 const username = ref('');
 const users = ref([]);
 const token = localStorage.getItem("token");
-const user_id = localStorage.getItem("user_id");
+const errorMessage = ref("");
 
 
 const searchUsers = async () => {
@@ -35,7 +35,7 @@ const searchUsers = async () => {
 
 
   } catch (error) {
-    console.log(error);
+    errorMessage.value = "Erreur lors du chargement des utilisateurs " + error;
   }
 };
 
@@ -68,7 +68,7 @@ const addFriend = async (friend_id) => {
 
 
   } catch (error) {
-    console.log(error);
+    errorMessage.value = "Erreur lors de l'ajout de l'ami " + error;
   }
 };
 </script>
@@ -77,6 +77,7 @@ const addFriend = async (friend_id) => {
   <div class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white space-y-4">
     <h1 class="text-4xl font-bold">Rechercher des amis</h1>
     <p class="text-lg text-gray-400">Ajoutez vos amis</p>
+    <div v-if="errorMessage" class="text-red-500">{{ errorMessage }}</div>
 
     <input v-model="username" @input="searchUsers" type="text" placeholder="Recherchez un ami"
       class="px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />

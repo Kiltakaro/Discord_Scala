@@ -7,6 +7,7 @@ const router = useRouter();
 const username = ref('');
 const email = ref('');
 const password = ref('');
+const errorMessage = ref('');
 
 
 const register = async () => {
@@ -38,7 +39,7 @@ const register = async () => {
         router.push('/login');
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur de la création du compte" + error;
     }
 };
 </script>
@@ -47,6 +48,8 @@ const register = async () => {
     <div class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white space-y-4">
         <h1 class="text-4xl font-bold">Bienvenue sur mini-discord</h1>
         <p class="text-lg text-gray-400">Une plateforme Discord-like.</p>
+
+        <div v-if="errorMessage" class="text-red-500">{{ errorMessage }}</div>
 
         <form @submit.prevent="register" class="space-y-4">
             <div>

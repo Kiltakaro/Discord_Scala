@@ -35,7 +35,7 @@ const fetchFriends = async () => {
         console.log("Friends :", friends.value);
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur du changement des amis" + error;
     }
 };
 
@@ -64,7 +64,6 @@ const fetchGuilds = async () => {
 
     } catch (error) {
         errorMessage.value = "Erreur lors du chargement de la liste de serveurs";
-        console.log(error);
     }
 };
 

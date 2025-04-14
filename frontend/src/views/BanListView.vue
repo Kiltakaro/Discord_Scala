@@ -99,7 +99,7 @@ const unbanUser = async (unbanId) => {
         fetchBannedUsers();
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur lors du débannissement " + error;
     }
 }
 
@@ -116,7 +116,7 @@ onMounted(() => {
 <template>
     <div class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white space-y-4">
         <h1 class="text-4xl font-bold">Liste des utilisateurs bannis</h1>
-
+        <div v-if="errorMessage" class="text-red-500">{{ errorMessage }}</div>
         <ul class="w-full max-w-md bg-gray-600 rounded-lg p-4 mt-4">
             <li v-for="banned_user in banned_from_guild" :key="banned_user.user_id"
                 class="flex justify-between items-center p-2 border-b border-gray-700">

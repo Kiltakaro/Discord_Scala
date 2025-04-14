@@ -65,7 +65,7 @@ const searchUsers = async () => {
 
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur de la recherche de l'utilisateur : " + error;
     }
 };
 
@@ -111,7 +111,7 @@ const inviteUserToGuild = async (invited_id) => {
 
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur de l'invitation au serveur : " + error;
     }
 };
 
@@ -245,7 +245,7 @@ const banUser = async (banned_id) => {
         await fetchUsersInGuild();
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur du bannissement de l'utilisateur : " + error;
     }
 }
 
@@ -281,7 +281,7 @@ const kickUser = async (kicked_id) => {
         fetchUsersInGuild();
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur de l'expulsion de l'utilisateur : " + error;
     }
 }
 
@@ -311,7 +311,7 @@ const deleteGuild = async () => {
         alert("Serveur supprimé");
         router.push("/serverList");
     } catch (error) {
-        console.error(error);
+        errorMessage.value = "Erreur de la suppression du serveur : " + error;
         router.push("/serverList");
     }
 };

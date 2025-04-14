@@ -11,7 +11,7 @@ const token = localStorage.getItem("token");
 
 const createChannel = async () => {
     if(!channelName.value) {
-        errorMessage.value("Le nom du channel ne doit pas être vide");
+        errorMessage.value("Le nom du channel ne peut pas être vide");
         return;
     }
 

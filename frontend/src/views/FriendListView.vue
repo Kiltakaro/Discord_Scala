@@ -4,8 +4,7 @@ import { useRouter } from 'vue-router';
 
 const friends = ref([]);
 const token = localStorage.getItem("token");
-const user_id = localStorage.getItem("user_id");
-
+const errorMessage = ref("");
 
 const fetchFriends = async () => {
     try {
@@ -26,7 +25,7 @@ const fetchFriends = async () => {
         console.log("Friends :", friends.value);
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur lors du chargement des amis " + error;
     }
 };
 
@@ -40,6 +39,7 @@ onMounted(() => {
     <div class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white space-y-4">
         <h1 class="text-4xl font-bold">Liste d'amis</h1>
         <p class="text-lg text-gray-400">Voici vos Amis</p>
+        <div v-if="errorMessage" class="text-red-500">{{ errorMessage }}</div>
 
         <ul class="w-full max-w-md bg-gray-600 rounded-lg p-4 mt-4">
             <li v-for="friend in friends" :key="friend.user_id"
