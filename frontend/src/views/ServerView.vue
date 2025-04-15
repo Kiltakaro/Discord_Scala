@@ -1,7 +1,7 @@
 <script setup>
 // tuto context menu (goatesque): https://medium.com/@sj.anyway/custom-right-click-context-menu-in-vue3-b323a3913684
 import { ref, onMounted } from 'vue';
-import {useRoute, useRouter} from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import MenuView from "@/views/MenuView.vue";
 
 const router = useRouter();
@@ -29,7 +29,7 @@ const targetUserId = ref(""); // Sur quel user on a fait clic droit
 const menuX = ref(0);
 const menuY = ref(0);
 const contextMenuActionsChannel = ref([
-    { label: 'Supprimer', action: 'delete'}
+    { label: 'Supprimer', action: 'delete' }
 ]);
 
 const contextMenuActionsUser = ref([
@@ -102,7 +102,7 @@ const inviteUserToGuild = async (invited_id) => {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`,
             },
-            body: JSON.stringify({invited_id: invited_id, guild_id: guildId.value})
+            body: JSON.stringify({ invited_id: invited_id, guild_id: guildId.value })
         });
 
         if (!inviteResponse.ok) {
@@ -171,7 +171,7 @@ const fetchUsersInGuild = async () => {
     }
 };
 
-const fetchChannelsInGuild = async() => {
+const fetchChannelsInGuild = async () => {
     try {
         const response = await fetch(`http://localhost:8080/channels/${guildId.value}`, {
             method: "GET",
@@ -189,7 +189,7 @@ const fetchChannelsInGuild = async() => {
     }
 };
 
-const deleteChannel = async(channelId) => {
+const deleteChannel = async (channelId) => {
     try {
         const response = await fetch(`http://localhost:8080/channels/${guildId.value}/${channelId}`, {
             method: "DELETE",
@@ -208,7 +208,7 @@ const deleteChannel = async(channelId) => {
 }
 
 const getChannelMessages = async (channelId) => {
-    
+
     if (!channelId) {
         return;
     }
@@ -348,7 +348,7 @@ const displayMenuChannel = (event, channelId) => {
 };
 
 const displayMenuUser = (event, userId) => {
-    if(user_id === userId) return;
+    if (user_id === userId) return;
 
     event.preventDefault();
     showMenuUser.value = true;
@@ -365,7 +365,7 @@ const closeMenu = () => {
 
 // Ici on peut éventuellement gérer d'autres actions genre edit, etc
 const handleMenuActionsChannel = (action) => {
-    if(action === 'delete') {
+    if (action === 'delete') {
         deleteChannel(targetChannelId.value);
     }
     closeMenu();
@@ -411,33 +411,13 @@ onMounted(() => {
             <p> Voici un texte hyper long pour tester si le padding right marche bien et si la barre d'utilisateurs ne
                 va pas passer par dessus le texte et le rendre illisible psk ça serait vraiment dommage de pas pouvoir
                 observer un tel message</p>
-            
-            <!-- Affichage des messages -->
-            <div class="mt-6 w-full bg-gray-800 p-4 rounded-lg">
-                <h2 class="text-xl font-bold mb-4">Messages</h2>
-                <ul>
-                    <li v-for="message in messages" :key="message.id" class="mb-2">
-                        <div class="flex items-start space-x-4">
-                            <!-- Il va falloir changer l'id pour le username -->
-                            <div class="text-sm font-bold text-purple-400">{{ message.sender_id }}</div>
-                            <!-- Faut aussi afficher le msg a droite si L'utilisateur actuel est celui qui a envoyé le msg -->
-                            <div class="text-sm text-blue-300">{{ message.content }}</div>
-                            <!-- Faut mettre un format de date + stylé -->
-                            <!-- Faudrait peut etre gerer le changement de date en fonction de ou vit l'utilisateur -->
-                            <div class="text-xs text-gray-300 ml-auto">{{ message.sent_at }}</div>
-                        </div>
-                    </li>
-                </ul>
-            </div>
-
 
             <!-- Ajouter des utilisateurs (Réservé a l'admin du serveur) -->
-            <!-- Faudra trouver un moyen plus stylé de faire ça -->
-            <div v-if="owner" class="flex justify-center items-center">
+            <!-- Si pas de channel choisi ou 0 message dans les channels, l'admin est 'invité' à ajouter des utilisateurs -->
+            <div v-if="messages.length === 0 && owner" class="flex justify-center items-center">
                 <div class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white space-y-4">
-                    <h1 class="text-4xl font-bold">Rechercher des personnes au serveur</h1>
-
-                    <input v-model="username" @input="searchUsers" type="text" placeholder="Recherchez un ami"
+                    <h1 class="text-4xl font-bold text-center">Il n'y a aucun message ici ! Changez de channel ou invitez des gens sur le serveur</h1>
+                    <input v-model="username" @input="searchUsers" type="text" placeholder="Ajoutez quelqu'un"
                         class="px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 w-full max-w-4xl">
@@ -456,6 +436,22 @@ onMounted(() => {
                 </div>
             </div>
 
+            <!-- Affichage des messages -->
+            <div class="mt-6 w-full bg-gray-800 p-4 rounded-lg">
+                <h2 class="text-xl font-bold mb-4">Messages</h2>
+                <ul>
+                    <li v-for="message in messages" :key="message.id" class="mb-2">
+                        <div class="flex items-start space-x-4"
+                            :class="{ 'justify-end': message.sender_id === user_id }">
+                            <div class="text-sm font-bold text-purple-400">{{ message.username }}</div>
+                            <div class="text-sm text-blue-300">{{ message.content }}</div>
+                            <!-- Faut mettre un format de date + stylé -->
+                            <div class="text-xs text-gray-300 ml-auto">{{ message.sent_at }}</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
             <!-- Liste des channels -->
             <div
                 class="fixed left-0 top-2 bottom-0 w-64 bg-gray-800 p-4 border-r-4 border-gray-700 overflow-y-auto mt-16">
@@ -465,7 +461,7 @@ onMounted(() => {
                         class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700"
                         @click="getChannelMessages(channel.channelId)"
                         @contextmenu.prevent="displayMenuChannel($event, channel.channelId)">
-                    {{channel.name}}
+                        {{ channel.name }}
                     </li>
                 </ul>
                 <button v-if="owner" @click="createChannelRedirect()"
@@ -473,14 +469,9 @@ onMounted(() => {
                     Nouveau channel
                 </button>
 
-            <!-- affichage du menu clic droit pour les channels -->
-            <MenuView
-                v-if="showMenuChannel && owner"
-                :actions="contextMenuActionsChannel"
-                @action-clicked="handleMenuActionsChannel"
-                :x="menuX"
-                :y="menuY"
-            />
+                <!-- affichage du menu clic droit pour les channels -->
+                <MenuView v-if="showMenuChannel && owner" :actions="contextMenuActionsChannel"
+                    @action-clicked="handleMenuActionsChannel" :x="menuX" :y="menuY" />
             </div>
 
             <!-- Liste des membres du serveur -->
@@ -498,13 +489,8 @@ onMounted(() => {
                         <span class="flex-1">{{ user.username }}</span>
 
                         <!-- Visible que pour l'admin + empêche l'admin de se ban / kick lui-même -->
-                        <MenuView
-                            v-if="showMenuUser && owner"
-                            :actions="contextMenuActionsUser"
-                            @action-clicked="handleMenuActionsUser"
-                            :x="menuX"
-                            :y="menuY"
-                        />
+                        <MenuView v-if="showMenuUser && owner" :actions="contextMenuActionsUser"
+                            @action-clicked="handleMenuActionsUser" :x="menuX" :y="menuY" />
                     </li>
                 </ul>
                 <button v-if="owner"

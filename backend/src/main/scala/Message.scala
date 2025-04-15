@@ -16,7 +16,7 @@ import org.http4s.circe.CirceEntityDecoder._
 import java.util.UUID
 
 
-case class MessageOutputModel(message_id: UUID, channel_id: UUID, sender_id:UUID, content: String, sent_at: String)
+case class MessageOutputModel(message_id: UUID, channel_id: UUID, sender_id:UUID, content: String, sent_at: String, username: String)
 
 object Message {
     implicit val uuidMeta: Meta[UUID] = Meta[String].imap[UUID](UUID.fromString)(_.toString)
@@ -26,8 +26,11 @@ object Message {
 
     def getMessagesFromChannel(channel_id: UUID, xa: Transactor[IO]): IO[List[MessageOutputModel]] = {
         sql"""
-            SELECT * FROM Message
-            WHERE channel_id = $channel_id
+            SELECT msg.message_id, msg.channel_id, msg.sender_id, msg.content, msg.sent_at, user.username
+            FROM Message msg
+            JOIN User user
+            ON msg.sender_id = user.user_id
+            WHERE msg.channel_id = $channel_id
         """.query[MessageOutputModel].to[List].transact(xa)
     }
 
