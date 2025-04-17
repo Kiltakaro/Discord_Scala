@@ -13,7 +13,9 @@ const token = localStorage.getItem("token");
 const user_id = localStorage.getItem("user_id");
 const owner = ref(false);
 const users = ref([]);
-const messages = ref([]);
+const messages = ref([]); // c'est les msg du channel
+const newMessage = ref(""); // c'est le msg que le user écrit
+const actualChannel = ref(null); // channel actuel
 
 const channels_in_guild = ref([]);
 // pour les invitations
@@ -227,6 +229,7 @@ const getChannelMessages = async (channelId) => {
         }
 
         messages.value = await response.json();
+        actualChannel.value = channelId;
 
     } catch (error) {
         errorMessage.value = "Erreur lors du chargement du channel : " + error;
@@ -338,6 +341,40 @@ const deleteGuild = async () => {
     }
 };
 
+const sendMessage = async () => {
+    // A FIX CECI ACCEPTE MEME LES MSG VIDE VISIBLEMENT
+    if (newMessage === "") {
+        errorMessage.value = "Le message ne peut pas être vide";
+        return;
+    }
+
+    try {
+        const response = await fetch(`http://localhost:8080/messages/channel/${actualChannel.value}/send`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify({ 
+                content: newMessage.value 
+            }),
+        });
+
+        if (!response.ok) {
+            errorMessage.value = "Erreur interne";
+            return;
+        }
+
+        newMessage.value = ""; // remise a 0 du msg pour eviter de devoir supprimer son ancien msg a chaque fois lol
+        // FIX CECI AUSSI, LE REFRESH se fait mal (meme avec un await), obligé de leave le channel et revenir
+        getChannelMessages(targetChannelId.value); // rechargement des msgs
+        errorMessage.value = null; // reset de l'erreur
+
+    } catch (error) {
+        errorMessage.value = "Erreur lors de l'envoi du message : " + error;
+    }
+}
+
 // Affiche un menu en faisant clic droit sur un channel
 const displayMenuChannel = (event, channelId) => {
     event.preventDefault();
@@ -437,6 +474,7 @@ onMounted(() => {
             </div>
 
             <!-- Affichage des messages -->
+            <!-- A FIX L'AFFICHAGE DES MSG EST UN PEU RANDOM jusqu'a ce qu'on relance le serv  -->
             <div class="mt-6 w-full bg-gray-800 p-4 rounded-lg">
                 <h2 class="text-xl font-bold mb-4">Messages</h2>
                 <ul>
@@ -445,7 +483,7 @@ onMounted(() => {
                             :class="{ 'justify-end': message.sender_id === user_id }">
                             <div class="text-sm font-bold text-purple-400">{{ message.username }}</div>
                             <div class="text-sm text-blue-300">{{ message.content }}</div>
-                            <!-- Faut mettre un format de date + stylé -->
+                            <!-- A FIX Faut mettre un format de date + stylé -->
                             <div class="text-xs text-gray-300 ml-auto">{{ message.sent_at }}</div>
                         </div>
                     </li>
@@ -472,6 +510,19 @@ onMounted(() => {
                 <!-- affichage du menu clic droit pour les channels -->
                 <MenuView v-if="showMenuChannel && owner" :actions="contextMenuActionsChannel"
                     @action-clicked="handleMenuActionsChannel" :x="menuX" :y="menuY" />
+            </div>
+
+            <!-- textbox pour ecire des messages -->
+            <div class="fixed bottom-0 left-64 right-64 bg-gray-800 p-4 border-t-4 border-gray-700">
+                <div class="flex items-center space-x-4">
+                    <textarea v-model="newMessage" placeholder="Écrire un message"
+                        class="flex-1 p-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <!-- A FIX le rendre disponible QUE SI CHANNEL NON NULL + MESSAGE NON NULL -->
+                    <button @click="sendMessage"
+                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
+                        Envoyer
+                    </button>
+                </div>
             </div>
 
             <!-- Liste des membres du serveur -->
