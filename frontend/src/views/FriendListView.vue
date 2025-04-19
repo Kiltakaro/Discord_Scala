@@ -6,6 +6,10 @@ const friends = ref([]);
 const token = localStorage.getItem("token");
 const errorMessage = ref("");
 
+if (!token) {
+  router.push("/login");
+}
+
 const fetchFriends = async () => {
     try {
         const response = await fetch(`http://localhost:8080/friends`, {

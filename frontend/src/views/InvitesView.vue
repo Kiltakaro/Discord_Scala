@@ -6,6 +6,9 @@ const guildInvites = ref([]);
 const errorMessage = ref("");
 const token = localStorage.getItem("token");
 
+if (!token) {
+  router.push("/login");
+}
 
 ///////////////////// FRIENDS //////////////////////
 

@@ -12,6 +12,10 @@ const token = localStorage.getItem("token");
 const user_id = localStorage.getItem("user_id");
 const errorMessage = ref(null);
 
+if (!token) {
+  router.push("/login");
+}
+
 const fetchFriends = async () => {
 
     if (!user_id) {
@@ -19,7 +23,7 @@ const fetchFriends = async () => {
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/friends/${user_id}`, {
+        const response = await fetch(`http://localhost:8080/friends`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -35,7 +39,7 @@ const fetchFriends = async () => {
         console.log("Friends :", friends.value);
 
     } catch (error) {
-        errorMessage.value = "Erreur du changement des amis" + error;
+        errorMessage.value = "Erreur du changement des amis : " + error;
     }
 };
 

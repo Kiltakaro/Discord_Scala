@@ -9,6 +9,10 @@ const errorMessage = ref("");
 const user_id = localStorage.getItem("user_id");
 const token = localStorage.getItem("token");
 
+if (!token) {
+  router.push("/login");
+}
+
 const createGuild = async () => {
   if (!guildName.value.trim()) {
     errorMessage.value = "Le serveur doit avoir un nom";

@@ -15,7 +15,9 @@ const user_id = localStorage.getItem("user_id");
 const errorMessage = ref('');
 const user = ref(null);
 
-
+if (!token) {
+  router.push("/login");
+}
 
 //A supprimer si on décide de ne pas faire de pdp custom, ça dépend de la solution pour l'hébergement
 const changePfp = (event) => {

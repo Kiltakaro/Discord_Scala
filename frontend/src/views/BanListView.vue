@@ -12,6 +12,10 @@ const user_id = localStorage.getItem("user_id");
 const owner = ref(false);
 const banned_from_guild = ref([]);
 
+if (!token) {
+  router.push("/login");
+}
+
 const fetchGuild = async () => {
     try {
         const response = await fetch(`http://localhost:8080/guilds/${guildId.value}`, {

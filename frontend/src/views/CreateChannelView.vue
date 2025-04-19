@@ -9,6 +9,10 @@ const errorMessage = ref("");
 const guildId = ref(route.params.id);
 const token = localStorage.getItem("token");
 
+if (!token) {
+  router.push("/login");
+}
+
 const createChannel = async () => {
     if(!channelName.value) {
         errorMessage.value("Le nom du channel ne peut pas être vide");

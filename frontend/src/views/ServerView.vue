@@ -39,6 +39,9 @@ const contextMenuActionsUser = ref([
     { label: 'Bannir', action: 'ban' }
 ]);
 
+if (!token) {
+  router.push("/login");
+}
 
 const searchUsers = async () => {
     // la liste des users ayant un nom similaire qui va se remplir

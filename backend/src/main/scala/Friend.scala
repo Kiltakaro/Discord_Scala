@@ -33,12 +33,27 @@ object Friend {
     implicit val uuidMeta: Meta[UUID] = Meta[String].imap[UUID](UUID.fromString)(_.toString)
 
     def sendFriendRequest(user_id: UUID, friend_id: UUID, xa: Transactor[IO]): IO[Int] = {
-        val insertFriendRequest =
-        sql"""
-            INSERT INTO Friends (friendship_id, user_id1, user_id2, request_accepted)
-            VALUES (generateUUIDv4(), ${user_id.toString}, ${friend_id.toString}, 0)
-        """.update.run
-        insertFriendRequest.transact(xa)
+        if (user_id == friend_id) {
+            IO.pure(0)
+        } else {
+            val checkExisting =
+            sql"""
+                SELECT count() FROM Friends
+                WHERE (user_id1 = ${user_id.toString} AND user_id2 = ${friend_id.toString})
+                OR (user_id1 = ${friend_id.toString} AND user_id2 = ${user_id.toString})
+            """.query[Int].unique
+
+            val insertFriendRequest =
+            sql"""
+                INSERT INTO Friends (friendship_id, user_id1, user_id2, request_accepted)
+                VALUES (generateUUIDv4(), ${user_id.toString}, ${friend_id.toString}, 0)
+            """.update.run
+
+            for {
+                exists <- checkExisting.transact(xa)
+                result <- if (exists > 0) IO.pure(0) else insertFriendRequest.transact(xa)
+            } yield result
+        }
     }
 
     // je viens de penser mais de cette façon la personne qui reçoit la demande est forcément le user2

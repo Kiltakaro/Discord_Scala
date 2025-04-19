@@ -330,23 +330,32 @@ object Guild {
         HttpRoutes.of[IO] {
             
             // Création de guilde
+            // tests de vérifs côté backend
             case req @ POST -> Root / "create" =>
-                req.as[Json].flatMap { json =>
-                    val guildName = json.hcursor.get[String]("guildName").getOrElse("")
-                    val guildDescription = json.hcursor.get[String]("guildDescription").getOrElse("")
-                    val ownerIdStr = json.hcursor.get[String]("ownerId").getOrElse("")
+                req.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                    val token = header.head.value.stripPrefix("Bearer ")
+                    val userIdFromToken = Authentification.decodeToken(token)
 
-                    if (guildName.nonEmpty && ownerIdStr.nonEmpty) {
-                        val ownerId = UUID.fromString(ownerIdStr)
+                    req.as[Json].flatMap { json =>
+                        val guildName = json.hcursor.get[String]("guildName").getOrElse("")
+                        val guildDescription = json.hcursor.get[String]("guildDescription").getOrElse("")
+
+                        if (guildName.nonEmpty) {
+                        val ownerId = UUID.fromString(userIdFromToken)
                         createGuild(guildName, guildDescription, ownerId, xa).flatMap { guildId =>
                             Ok(Json.obj(
-                                "message" -> Json.fromString("Serveur créé avec succès"),
-                                "guildId" -> Json.fromString(guildId.toString)
+                            "message" -> Json.fromString("Serveur créé avec succès"),
+                            "guildId" -> Json.fromString(guildId.toString)
                             ))
                         }
-                    } else {
-                        BadRequest(Json.obj("error" -> Json.fromString("Le nom du serveur et l'ID du propriétaire sont obligatoires.")))
+                        } else {
+                        BadRequest(Json.obj("error" -> Json.fromString("Le serveur nécessite un nom")))
+                        }
                     }
+
+                    case None =>
+                    BadRequest("Token manquant")
                 }
             
             // READ
