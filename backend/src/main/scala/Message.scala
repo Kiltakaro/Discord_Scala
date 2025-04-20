@@ -16,7 +16,7 @@ import org.http4s.circe.CirceEntityDecoder._
 import java.util.UUID
 
 
-case class MessageOutputModel(message_id: UUID, channel_id: UUID, sender_id:UUID, content: String, sent_at: String, username: String)
+case class MessageOutput(message_id: UUID, channel_id: UUID, sender_id:UUID, content: String, sent_at: String, username: String)
 
 object Message {
     implicit val uuidMeta: Meta[UUID] = Meta[String].imap[UUID](UUID.fromString)(_.toString)
@@ -24,14 +24,14 @@ object Message {
     ///////////////////////// MESSAGES //////////////////////////////////////
 
 
-    def getMessagesFromChannel(channel_id: UUID, xa: Transactor[IO]): IO[List[MessageOutputModel]] = {
+    def getMessagesFromChannel(channel_id: UUID, xa: Transactor[IO]): IO[List[MessageOutput]] = {
         sql"""
             SELECT msg.message_id, msg.channel_id, msg.sender_id, msg.content, msg.sent_at, user.username
             FROM Message msg
             JOIN User user
             ON msg.sender_id = user.user_id
             WHERE msg.channel_id = $channel_id
-        """.query[MessageOutputModel].to[List].transact(xa)
+        """.query[MessageOutput].to[List].transact(xa)
     }
 
     // ON NE VA FAIRE EN SORTE DE SUPPRIMER LES MSG QUE SUR LES SERVS ET PAS EN DM
@@ -69,7 +69,7 @@ object Message {
                         req.as[Json].flatMap { json =>
                             val content = json.hcursor.get[String]("content").getOrElse("")
 
-                            val message = MessageInputModel(
+                            val message = MessageInput(
                                 channel_id = channelId, 
                                 sender_id = UUID.fromString(userIdFromToken),
                                 content = content,
@@ -81,7 +81,7 @@ object Message {
                     case None => BadRequest("Token not found")
                 }
 
-            case req @ DELETE -> Root / "channel" / UUIDVar(channelId) / UUIDVar(messageId) =>
+            case req @ DELETE -> Root / UUIDVar(messageId) / "channel" / UUIDVar(channelId) =>
                 req.headers.get(ci"Authorization") match {
                     case Some(header) =>
                         val token = header.head.value.stripPrefix("Bearer ")

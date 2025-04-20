@@ -4,7 +4,7 @@ import io.circe.generic.auto._
 import io.circe.syntax._
 import java.util.UUID
 
-case class MessageInputModel(channel_id: UUID, sender_id: UUID, content: String, sent_at: String)
+case class MessageInput(channel_id: UUID, sender_id: UUID, content: String, sent_at: String)
 
 object MessageProducer {
 
@@ -17,7 +17,7 @@ object MessageProducer {
     // https://fd4s.github.io/fs2-kafka/docs/quick-example
     val producerSettings = ProducerSettings[IO, String, String].withBootstrapServers(ip)
     
-    def sendMessage(message: MessageInputModel): IO[Unit] = {
+    def sendMessage(message: MessageInput): IO[Unit] = {
 
         val content = message.asJson.noSpaces
         val channel_id = message.channel_id.toString

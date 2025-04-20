@@ -84,7 +84,7 @@ const addFriend = async (friend_id) => {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify({ friend_id })
+      body: JSON.stringify({ friend_id : friend_id})
     });
 
     if (!response.ok) return;
