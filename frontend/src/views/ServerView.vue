@@ -17,6 +17,10 @@ const messages = ref([]); // c'est les msg du channel
 const newMessage = ref(""); // c'est le msg que le user écrit
 const actualChannel = ref(null); // channel actuel
 
+const selectedUser = ref(null); //Pour la fiche profile
+const showUserProfile = ref(false);
+
+
 const channels_in_guild = ref([]);
 // pour les invitations
 const username = ref('');
@@ -41,7 +45,7 @@ const contextMenuActionsUser = ref([
 ]);
 
 if (!token) {
-  router.push("/login");
+    router.push("/login");
 }
 
 const searchUsers = async () => {
@@ -358,8 +362,8 @@ const sendMessage = async () => {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`,
             },
-            body: JSON.stringify({ 
-                content: newMessage.value 
+            body: JSON.stringify({
+                content: newMessage.value
             }),
         });
 
@@ -444,6 +448,17 @@ const createChannelRedirect = async () => {
     await router.push(`/server/${guildId.value}/create-channel`);
 };
 
+const openUserProfile = (user) => {
+
+    selectedUser.value = user;
+    showUserProfile.value = true;
+};
+
+//Je change des qu'on a les pages de chat
+const userPrivateMessagesRedirect = (user) => {
+    console.log(`redirect to ${user.username}`);
+};
+
 onMounted(() => {
     fetchGuild();
     fetchUsersInGuild();
@@ -474,7 +489,8 @@ onUnmounted(() => {
             <!-- Si pas de channel choisi ou 0 message dans les channels, l'admin est 'invité' à ajouter des utilisateurs -->
             <div v-if="messages.length === 0 && owner" class="flex justify-center items-center">
                 <div class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white space-y-4">
-                    <h1 class="text-4xl font-bold text-center">Il n'y a aucun message ici ! Changez de channel ou invitez des gens sur le serveur</h1>
+                    <h1 class="text-4xl font-bold text-center">Il n'y a aucun message ici ! Changez de channel ou
+                        invitez des gens sur le serveur</h1>
                     <input v-model="username" @input="searchUsers" type="text" placeholder="Ajoutez quelqu'un"
                         class="px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
 
@@ -556,15 +572,22 @@ onUnmounted(() => {
                 </button>
                 <ul>
                     <li v-for="user in users_in_guild" :key="user.uuid"
-                        class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700"
-                        @contextmenu.prevent="displayMenuUser($event, user.uuid)">
-                        <span class="flex-1">{{ user.username }}</span>
+                        class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700 cursor-pointer"
+                        @click="openUserProfile(user)" @contextmenu.prevent="displayMenuUser($event, user.uuid)">
+                        <!-- Avatar placeholder à récup si on fait des pfp-->
+                        <div class="flex items-center space-x-2 flex-1">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/9/95/Vue.js_Logo_2.svg"
+                                alt="avatar" class="h-6 w-6 rounded-full object-cover" />
+                            <span>{{ user.username }}</span>
+                        </div>
 
-                        <!-- Visible que pour l'admin + empêche l'admin de se ban / kick lui-même -->
+                        <!-- Menu contextuel pour admin -->
                         <MenuView v-if="showMenuUser && owner" :actions="contextMenuActionsUser"
                             @action-clicked="handleMenuActionsUser" :x="menuX" :y="menuY" />
                     </li>
+
                 </ul>
+
                 <button v-if="owner"
                     class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg"
                     @click="banListRedirect(guildId)">
@@ -573,4 +596,34 @@ onUnmounted(() => {
             </div>
         </div>
     </div>
+    <!-- Fiche utilisateur comme sur discord -->
+    <div v-if="showUserProfile" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+        <div class="bg-gray-800 p-6 rounded-xl w-96 shadow-lg text-white relative">
+            <button class="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+                @click="showUserProfile = false">x</button>
+
+            <!-- Avatar placeholder à récup si on fait des pfp-->
+            <div class="flex justify-center mb-4">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/9/95/Vue.js_Logo_2.svg" alt="Vue.js Logo"
+                    class="h-24 w-24 rounded-full object-cover bg-white p-2" />
+            </div>
+
+
+            <h2 class="text-center text-2xl font-bold">{{ selectedUser?.username }}</h2>
+
+            <!-- Rôles placeholder à récup si on fait des roles -->
+            <div class="flex flex-wrap justify-center gap-2 mb-4">
+                <span class="px-2 py-1 bg-yellow-600 rounded-full text-xs">Admin</span>
+                <span class="px-2 py-1 bg-red-600 rounded-full text-xs">Scalistes</span>
+                <span class="px-2 py-1 bg-blue-600 rounded-full text-xs">KC BLUE BLUE</span>
+            </div>
+
+            <!-- Bouton MP -->
+            <button class="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
+                @click="userPrivateMessagesRedirect(selectedUser)">
+                Envoyer un message privé
+            </button>
+        </div>
+    </div>
+
 </template>
