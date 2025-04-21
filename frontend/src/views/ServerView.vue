@@ -1,6 +1,6 @@
 <script setup>
 // tuto context menu (goatesque): https://medium.com/@sj.anyway/custom-right-click-context-menu-in-vue3-b323a3913684
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import MenuView from "@/views/MenuView.vue";
 
@@ -21,6 +21,7 @@ const channels_in_guild = ref([]);
 // pour les invitations
 const username = ref('');
 const users_in_guild = ref([]);
+let refreshInterval = ref(null); // Pour le chargement des messages
 
 // Context menu variables
 // ON SE SERT DE ÇA LE + POSSIBLE SI ON PEUT, ÇA ÉVITE DE SPAM LES BOUTONS PARTOUT
@@ -136,15 +137,12 @@ const fetchGuild = async () => {
         }
 
         const data = await response.json();
-        console.log("Guild data :", data);
 
         if (data.guild_name) {
-            console.log("Données reçues");
             guild.value = data;
 
             if (guild.value.owner_id == user_id) {
                 owner.value = true;
-                console.log("propriétaire du serveur");
             }
         } else {
             errorMessage.value = "Aucune donnée reçue";
@@ -169,7 +167,6 @@ const fetchUsersInGuild = async () => {
         }
 
         users_in_guild.value = await response.json();
-        console.log("Users :", users_in_guild.value);
 
     } catch (error) {
         errorMessage.value = "Erreur de chargement des utilisateurs du serveur";
@@ -234,6 +231,10 @@ const getChannelMessages = async (channelId) => {
         messages.value = await response.json();
         actualChannel.value = channelId;
 
+        // va chercher les messages du channel a interval régulier
+        stopAutoRefresh(); // arrête l'ancien pooling
+        startAutoRefresh();
+
     } catch (error) {
         errorMessage.value = "Erreur lors du chargement du channel : " + error;
     }
@@ -269,7 +270,6 @@ const banUser = async (banned_id) => {
         if (!response.ok) {
             throw new Error(`Erreur : ${response.status}`);
         }
-        console.log("Banned id :", banned_id);
         alert("L'utilisateur a bien été banni du serveur");
         await fetchUsersInGuild();
 
@@ -369,14 +369,26 @@ const sendMessage = async () => {
         }
 
         newMessage.value = ""; // remise a 0 du msg pour eviter de devoir supprimer son ancien msg a chaque fois lol
-        // FIX CECI AUSSI, LE REFRESH se fait mal (meme avec un await), obligé de leave le channel et revenir
-        getChannelMessages(targetChannelId.value); // rechargement des msgs
         errorMessage.value = null; // reset de l'erreur
 
     } catch (error) {
         errorMessage.value = "Erreur lors de l'envoi du message : " + error;
     }
 }
+
+// Charge les msg toutes les 3 secs
+const startAutoRefresh = () => {
+    refreshInterval = setInterval(() => {
+        getChannelMessages(actualChannel.value);
+    }, 3000);
+};
+
+// arrête le pooling
+// A ne surtout pas ENLEVER, sans ça la requete va se dédoubler
+const stopAutoRefresh = () => {
+    clearInterval(refreshInterval);
+    refreshInterval = null;
+};
 
 // Affiche un menu en faisant clic droit sur un channel
 const displayMenuChannel = (event, channelId) => {
@@ -437,6 +449,12 @@ onMounted(() => {
     fetchUsersInGuild();
     fetchChannelsInGuild();
 });
+
+// arrete le pooling quand on change de page
+onUnmounted(() => {
+    stopAutoRefresh();
+});
+
 </script>
 
 <template>

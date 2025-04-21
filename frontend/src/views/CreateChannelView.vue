@@ -35,7 +35,6 @@ const createChannel = async () => {
         if (!response.ok) {
             throw new Error(response.error);
         }
-        alert("Le channel a été créé");
         await router.push(`/server/${guildId.value}`);
     } catch (error) {
         errorMessage.value = `Erreur lors de la création du channel : ${error}`;
