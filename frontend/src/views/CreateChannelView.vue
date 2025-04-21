@@ -20,7 +20,7 @@ const createChannel = async () => {
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/channels/${guildId.value}`, {
+        const response = await fetch(`http://localhost:8080/channels/guilds/${guildId.value}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

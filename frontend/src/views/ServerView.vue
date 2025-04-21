@@ -178,7 +178,7 @@ const fetchUsersInGuild = async () => {
 
 const fetchChannelsInGuild = async () => {
     try {
-        const response = await fetch(`http://localhost:8080/channels/${guildId.value}`, {
+        const response = await fetch(`http://localhost:8080/channels/guilds/${guildId.value}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -196,7 +196,7 @@ const fetchChannelsInGuild = async () => {
 
 const deleteChannel = async (channelId) => {
     try {
-        const response = await fetch(`http://localhost:8080/channels/${guildId.value}/${channelId}`, {
+        const response = await fetch(`http://localhost:8080/channels/${channelId}/guilds/${guildId.value}`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",

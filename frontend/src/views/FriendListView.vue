@@ -33,6 +33,11 @@ const fetchFriends = async () => {
     }
 };
 
+//Je change des qu'on a les pages de chat
+const friendRedirect = (friend) => {
+    console.log(`redirect to ${friend.username}`);
+};
+
 onMounted(() => {
     fetchFriends();
 });
@@ -44,6 +49,18 @@ onMounted(() => {
         <h1 class="text-4xl font-bold">Liste d'amis</h1>
         <p class="text-lg text-gray-400">Voici vos Amis</p>
         <div v-if="errorMessage" class="text-red-500">{{ errorMessage }}</div>
+
+
+        <div class="w-full max-w-lg mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-gray-300 text-center">Messages Privés</h2>
+            <div class="flex flex-wrap justify-center gap-6">
+                <button v-for="friend in friends" :key="friend.user_id" @click="friendRedirect(friend)"
+                    class="flex flex-col items-center focus:outline-none">
+                    <IconMessage class="w-16 h-16 rounded-full border-2 border-gray-700 hover:border-white transition" />
+                    <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ friend.username }}</span>
+                </button>
+            </div>
+        </div>
 
         <ul class="w-full max-w-md bg-gray-600 rounded-lg p-4 mt-4">
             <li v-for="friend in friends" :key="friend.user_id"
