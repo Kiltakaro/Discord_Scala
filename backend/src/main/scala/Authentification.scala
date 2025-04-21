@@ -39,50 +39,6 @@ object Authentification {
     val key = "secretkey"
     val algo = JwtAlgorithm.HS256
 
-
-    // val userId = 88
-    // val claim = JwtClaim(
-    //     content = s"""{"userId": $userId}""",
-    //     expiration = Some(Instant.now.plusSeconds(3600).getEpochSecond),
-    //     issuedAt = Some(Instant.now.getEpochSecond)
-    // )
-    // val token = JwtCirce.encode(claim, key, algo)
-
-    // println(s"Token généré : $token")
-
-    // val decoded = JwtCirce.decode(token, key, Seq(JwtAlgorithm.HS256))
-
-    // println(s"Token décodé : $decoded")
-
-    // val decodedjson = JwtCirce.decodeJson(token, key, Seq(JwtAlgorithm.HS256))
-
-    // println(s"Token décodé en JSON : $decodedjson")
-
-    // val jsonString = """{"name": "Peter", "age": 13, "pets": ["Toolkitty", "Scaniel"]}"""
-    // val json: ujson.Value  = ujson.read(jsonString)
-    // println(json("name").str)
-
-    // val reponse: ujson.Value = ujson.read(decodedjson)
-    // println(reponse("userId").str)
-
-    // decodedjson match {
-    //     case Success(json) =>
-    //         val jsonString = json.noSpaces
-    //         val reponse: ujson.Value = ujson.read(jsonString)
-    //         println(reponse("userId").num.toInt)
-    //         println(reponse("userId").num)
-    //     case Failure(exception) =>
-    //         println(s"exception : $exception")
-    // }
-
-
-    // def main(args: Array[String]): Unit = {
-    //     println(s"Token généré : $token")
-    //     println(s"Token décodé : $decoded")
-    //     println(s"Token décodé en JSON : $decodedjson")
-    // }
-
-
     implicit val uuidMeta: Meta[UUID] = Meta[String].imap[UUID](UUID.fromString)(_.toString)
 
 
@@ -95,7 +51,6 @@ object Authentification {
         JwtCirce.encode(claim, key, algo)
     }
 
-    // ENFIN REUUUUUUSSSSSSSi
     def decodeToken(token: String): String = {
         val decodedToken = JwtCirce.decode(token, key, Seq(algo)) 
         decodedToken match {
@@ -141,23 +96,6 @@ object Authentification {
 
     def authentificationRoutes(xa: Transactor[IO])= {
         HttpRoutes.of[IO] {
-
-            // case r @ POST -> Root / "register" =>
-            //     r.as[String].flatMap { body =>
-
-            //         println(s"Received body: $body")
-            //         val json = ujson.read(body)
-            //         println(s"json: $json")
-            //         val username = json("username").str
-            //         val password = json("password").str
-            //         val username = json("username").str.getOrElse("")
-            //         val password = json("password").str.getOrElse("")
-            //         println(s" username: $username, password: $password")
-
-            //         registerUser(username, password, xa).flatMap { userId =>
-            //             Ok(ujson.Obj("message" -> "User registered successfully", "userId" -> userId).asJson)                }
-            //     }     
-
             
             case r @ POST -> Root / "register" =>
                 r.as[Json].flatMap { json =>
