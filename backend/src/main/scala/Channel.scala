@@ -15,21 +15,28 @@ import org.http4s.circe.CirceEntityDecoder._
 
 import java.util.UUID
 
-case class ChannelModel(name: String, friendshipId: Option[UUID], guildId: Option[UUID])
-case class ChannelOutputModel(channelId: UUID, name: String, friendshipId: Option[String], guildId: Option[String])
+case class ChannelInput(name: String, friendshipId: Option[UUID], guildId: Option[UUID])
+case class ChannelOutput(channelId: UUID, name: String, friendshipId: Option[String], guildId: Option[String])
 
 object Channel {
     implicit val uuidMeta: Meta[UUID] = Meta[String].imap[UUID](UUID.fromString)(_.toString)
 
-    def getGuildChannels(guildId: UUID, xa: Transactor[IO]): IO[List[ChannelOutputModel]] = {
+    def getGuildChannels(guildId: UUID, xa: Transactor[IO]): IO[List[ChannelOutput]] = {
         sql"""
             SELECT * FROM Channel
             WHERE guild_id = $guildId
-        """.query[ChannelOutputModel].to[List].transact(xa)
+        """.query[ChannelOutput].to[List].transact(xa)
+    }
+
+    def getDMChannel(friendshipId: UUID, xa: Transactor[IO]): IO[Option[ChannelOutput]] = {
+        sql"""
+            SELECT * FROM Channel
+            WHERE friendship_id = $friendshipId
+        """.query[ChannelOutput].option.transact(xa)
     }
 
     // Permet de créer un channel DM ou guild, suffit de mettre NULL à friendshipId ou à guildId en fonction de ce qu'on veut
-    def createChannel(channel: ChannelModel, xa: Transactor[IO]): IO[Int] = {
+    def createChannel(channel: ChannelInput, xa: Transactor[IO]): IO[Int] = {
         sql"""
             INSERT INTO Channel (channel_name, friendship_id, guild_id)
             VALUES (${channel.name}, ${channel.friendshipId}, ${channel.guildId})
@@ -55,7 +62,7 @@ object Channel {
     // ROUTES
     def channelRoutes(xa: Transactor[IO]): HttpRoutes[IO] = {
         HttpRoutes.of[IO] {
-            case req@GET -> Root / UUIDVar(guildId) =>
+            case req@GET -> Root / "guilds" / UUIDVar(guildId) =>
                 req.headers.get(ci"Authorization") match {
                     case Some(header) =>
                         val token = header.head.value.stripPrefix("Bearer ")
@@ -69,14 +76,14 @@ object Channel {
                         BadRequest("Token not found")
                 }
 
-            case req@POST -> Root / UUIDVar(guildId) =>
+            case req@POST -> Root / "guilds" / UUIDVar(guildId) =>
                 req.headers.get(ci"Authorization") match {
                     case Some(header) =>
                         val token = header.head.value.stripPrefix("Bearer ")
 
                         val userIdFromToken = Authentification.decodeToken(token)
-                        req.as[ChannelModel].attempt.flatMap {
-                            case Right(channel: ChannelModel) =>
+                        req.as[ChannelInput].attempt.flatMap {
+                            case Right(channel: ChannelInput) =>
                                 if (channel.name.isEmpty) {
                                     BadRequest("Channel name must not be empty")
                                 }
@@ -93,7 +100,7 @@ object Channel {
                         BadRequest("Token not found")
                 }
 
-            case req@DELETE -> Root / UUIDVar(guildId) / UUIDVar(channelId) =>
+            case req@DELETE -> Root / UUIDVar(channelId) / "guilds" / UUIDVar(guildId) =>
                 req.headers.get(ci"Authorization") match {
                     case Some(header) =>
                         val token = header.head.value.stripPrefix("Bearer ")
@@ -111,6 +118,64 @@ object Channel {
                     case None =>
                         BadRequest("Token not found")
                 }
+
+            ////////////////////////// POUR LES DM ///////////////////////////
+
+
+            case req@GET -> Root / "freinds" / UUIDVar(friendshipId) =>
+                req.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
+
+                        val userIdFromToken = Authentification.decodeToken(token)
+                        getDMChannel(friendshipId, xa).flatMap { channel =>
+                            Ok(channel.asJson)
+                        }
+
+                    case None =>
+                        BadRequest("Token not found")
+                }
+
+            case req@POST -> Root / "friends" / UUIDVar(friendshipId) =>
+                req.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
+
+                        val userIdFromToken = Authentification.decodeToken(token)
+                        // faudrait hypothétiquement vérifier si le userIdFromToken est bien ami avec le friendshipId
+                        val channelDM = ChannelInput(
+                            name = "DM",
+                            friendshipId = Some(friendshipId), // sinon erreur car c'est une option
+                            guildId = None // il faut le mettre a none car c'est une option
+                        )
+                        createChannel(channelDM, xa).flatMap { result =>
+                            Ok(s"Rows affected: $result")
+                        }
+
+                    case None =>
+                        BadRequest("Token not found")
+                }
+            
+
+            case req@DELETE -> Root / UUIDVar(channelId)  =>
+                req.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
+
+                        val userIdFromToken = Authentification.decodeToken(token)
+                        deleteChannel(channelId, xa).flatMap {
+                            case 0 =>
+                                NotFound(s"Pas de channel trouvé avec l'ID $channelId")
+
+                            case result@1 =>
+                                Ok(s"Rows affected : $result")
+                        }
+
+                    case None =>
+                        BadRequest("Token not found")
+                }
+
+            
         }
     }
 }    
