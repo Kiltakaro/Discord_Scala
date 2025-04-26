@@ -123,6 +123,15 @@ object Friend {
         .transact(xa)
     }
 
+    // contrairement aux autres querries, la on sait pas si c'est user1 ou 2
+    def getFriendshipIdFromUsers(user_id1: UUID, user_id2: UUID, xa: Transactor[IO]): IO[Option[UUID]] = {
+        sql"""
+            SELECT friendship_id FROM Friends
+            WHERE (user_id1 = ${user_id1.toString} AND user_id2 = ${user_id2.toString})
+            OR (user_id1 = ${user_id2.toString} AND user_id2 = ${user_id1.toString})
+        """.query[UUID].option
+        .transact(xa)
+    }
 
     def friendRoutes(xa: Transactor[IO])= {
         HttpRoutes.of[IO] {
@@ -242,6 +251,20 @@ object Friend {
             //         case None =>
             //             BadRequest("Token not found")
             //     }
+
+            // C'est pour recuperer friendship_id, sans ça c'est dur de trouver le channel de DM
+            case r @ GET -> Root / UUIDVar(friendId) =>
+                r.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
+
+                        val userIdFromToken = Authentification.decodeToken(token)
+                        getFriendshipIdFromUsers(UUID.fromString(userIdFromToken), friendId, xa).flatMap { result =>
+                            Ok(result.asJson)
+                        }
+                    case None =>
+                        BadRequest("Token not found")
+                }
 
         }
     }
