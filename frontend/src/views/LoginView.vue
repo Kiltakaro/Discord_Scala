@@ -6,6 +6,7 @@ const router = useRouter();
 
 const email = ref('');
 const password = ref('');
+const errorMessage = ref('');
 
 
 const login = async () => {
@@ -25,7 +26,6 @@ const login = async () => {
             body: JSON.stringify(userInput)
         });
 
-        console.log(response);
 
         // Connexion failed
         if (!response.ok) {
@@ -44,7 +44,7 @@ const login = async () => {
         }
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur du login" + error;
     }
 };
 </script>
@@ -53,6 +53,8 @@ const login = async () => {
     <div class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white space-y-4">
         <h1 class="text-4xl font-bold">Bienvenue sur mini-discord</h1>
         <p class="text-lg text-gray-400">Une plateforme Discord-like.</p>
+
+        <div v-if="errorMessage" class="text-red-500">{{ errorMessage }}</div>
 
         <form @submit.prevent="login" class="space-y-4">
             <div>

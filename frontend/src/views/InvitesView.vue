@@ -3,20 +3,19 @@ import { ref, onMounted } from 'vue';
 
 const friendRequests = ref([]);
 const guildInvites = ref([]);
+const errorMessage = ref("");
 const token = localStorage.getItem("token");
-const user_id = localStorage.getItem("user_id");
 
+if (!token) {
+  router.push("/login");
+}
 
 ///////////////////// FRIENDS //////////////////////
 
 const fetchFriendRequests = async () => {
 
-  if (!user_id) {
-    return;
-  }
-
   try {
-    const response = await fetch(`http://localhost:8080/friends/requests/${user_id}`, {
+    const response = await fetch(`http://localhost:8080/friends/requests`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -32,25 +31,16 @@ const fetchFriendRequests = async () => {
     console.log(friendRequests.value);
 
   } catch (error) {
-    console.log(error);
+    errorMessage.value = "Erreur lors du chargement des requetes d'amis" + error;
   }
 };
 
 
 const acceptFriendRequest = async (friend_id) => {
 
-  if (!user_id) {
-    return;
-  }
   if (!friend_id) {
     return;
   }
-
-  // cf message dans le backend, on pourrait inverser les deux
-  const friendInput = {
-    user_id: user_id,
-    friend_id: friend_id
-  };
 
   // On protege les routes
   // seul un utilisateur connecté peut chercher des amis
@@ -62,7 +52,7 @@ const acceptFriendRequest = async (friend_id) => {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify(friendInput)
+      body: JSON.stringify({friend_id : friend_id})
     });
 
     if (!response.ok) {
@@ -73,24 +63,15 @@ const acceptFriendRequest = async (friend_id) => {
     fetchFriendRequests();
 
   } catch (error) {
-    console.log(error);
+    errorMessage.value = "Erreur lors acceptation de la demande d'ami" + error;
   }
 };
 
 const declineFriendRequest = async (friend_id) => {
 
-  if (!user_id) {
-    return;
-  }
   if (!friend_id) {
     return;
   }
-
-  // cf message dans le backend, on pourrait inverser les deux
-  const friendInput = {
-    user_id: user_id,
-    friend_id: friend_id
-  };
 
   // On protege les routes
   // seul un utilisateur connecté peut chercher des amis
@@ -102,7 +83,7 @@ const declineFriendRequest = async (friend_id) => {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify(friendInput)
+      body: JSON.stringify({friend_id : friend_id})
     });
 
     if (!response.ok) {
@@ -113,7 +94,7 @@ const declineFriendRequest = async (friend_id) => {
     fetchFriendRequests();
 
   } catch (error) {
-    console.log(error);
+    errorMessage.value = "Erreur lors du refus de la demande d'ami " + error;
   }
 
 };
@@ -122,14 +103,13 @@ const declineFriendRequest = async (friend_id) => {
 
 const fetchGuildInvites = async () => {
   try {
-    const response = await fetch(`http://localhost:8080/guilds/invites/${user_id}`, {
+    const response = await fetch(`http://localhost:8080/guilds/invites`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
     });
-
     if (!response.ok) {
       return;
     }
@@ -144,18 +124,9 @@ const fetchGuildInvites = async () => {
 
 const acceptGuildInvite = async (guild_id) => {
 
-  if (!user_id) {
-    return;
-  }
   if (!guild_id) {
     return;
   }
-
-  const guildInput = {
-    user_id: user_id,
-    guild_id: guild_id
-  };
-
 
   try {
     const response = await fetch(`http://localhost:8080/guilds/invites/accept`, {
@@ -164,7 +135,7 @@ const acceptGuildInvite = async (guild_id) => {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify(guildInput)
+      body: JSON.stringify({guild_id: guild_id})
     });
 
     if (!response.ok) {
@@ -175,24 +146,15 @@ const acceptGuildInvite = async (guild_id) => {
     fetchGuildInvites();
 
   } catch (error) {
-    console.log(error);
+    errorMessage.value = "Erreur lors de l'acceptaion pour rejoindre un serveur" + error;
   }
 }
 
 const declineGuildInvite = async (guild_id) => {
 
-  if (!user_id) {
-    return;
-  }
   if (!guild_id) {
     return;
   }
-
-  // cf message dans le backend, on pourrait inverser les deux
-  const guildInput = {
-    user_id: user_id,
-    guild_id: guild_id
-  };
 
   // On protege les routes
   // seul un utilisateur connecté peut chercher des amis
@@ -204,7 +166,7 @@ const declineGuildInvite = async (guild_id) => {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify(guildInput)
+      body: JSON.stringify({guild_id: guild_id})
     });
 
     if (!response.ok) {
@@ -215,7 +177,7 @@ const declineGuildInvite = async (guild_id) => {
     fetchGuildInvites();
 
   } catch (error) {
-    console.log(error);
+    errorMessage.value = "Erreur lors du refus de l'invitation à un serveur " + error;
   }
 }
 
@@ -228,7 +190,8 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen flex flex-col items-center bg-gray-900 text-white space-y-16 p-8 overflow-auto">
-    
+    <div v-if="errorMessage" class="text-red-500">{{ errorMessage }}</div>
+
     <!-- Amis -->
     <div class="flex flex-col items-center space-y-4 w-full">
       <h1 class="text-4xl font-bold">Demandes d'amis</h1>

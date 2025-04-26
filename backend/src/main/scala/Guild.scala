@@ -14,7 +14,6 @@ import cats.data.NonEmptyList
 import org.typelevel.ci.CIStringSyntax
 
 import cats.effect.IO
-// import cats.effect.concurrent.Ref
 import cats.implicits._
 import doobie.util.transactor.Transactor
 import doobie.implicits._
@@ -22,13 +21,6 @@ import javax.xml.crypto.Data
 import java.util.UUID
 import doobie.util.meta.Meta
 
-
-
-// ça sert a rien pour le moment
-case class Guild(guild_name: String)
-
-// pourquoi s'embeter avec ça, j'ai pas l'impression que ce soit super utile ici
-case class GuildInput(guild_name: String, owner_id : UUID)
 
 case class GuildInviteInput(user_id: String, guild_id: String)
 case class GuildInviteOutput(guild_id: String, guild_name: String)
@@ -56,8 +48,7 @@ object Guild {
         } yield guildId
     }
 
-    // Récupère tous les Guild
-    // faudra peut etre récup l'id OU le nom du owner
+    // Récupère toutes les Guild
     def getAllGuilds(xa: Transactor[IO]): IO[List[(UUID, String)]] = {
         val query = sql"SELECT guild_id, guild_name FROM Guild".query[(UUID, String)]
         val queryToList: doobie.ConnectionIO[List[(UUID, String)]] = query.to[List]
@@ -126,9 +117,6 @@ object Guild {
     }
 
 
-    // Faudra rajouter un moyen de récuperer directement le nom pour l'affichage ça sera utile
-
-
     def modifyGuildOwner(id: UUID, owner_id: UUID, xa: Transactor[IO]): IO[Int] = {
         val modifyGuild = sql"UPDATE Guild SET owner_id = $owner_id WHERE guild_id = $id"
         .update
@@ -138,17 +126,6 @@ object Guild {
 
     /////////////////////////// GUILD RELATIONS ///////////////////////////
 
-    // Users
-
-    // Récupère l'ID de l'utilisateur connecté via son token JWT (pour l'instant ne fonctionne pas)
-    def getUserIdFromJWT(token: String): Option[UUID] = {
-        println(s"Received Token: $token")
-        JwtCirce.decode(token, "secretkey", Seq(JwtAlgorithm.HS256)).toOption.flatMap { decoded =>
-            parse(decoded.content).toOption.flatMap { json =>
-                json.hcursor.get[String]("user_id").toOption.map(UUID.fromString)
-            }
-        }  
-    }
 
     def addUserToGuild(userId: UUID, guildId: UUID, xa: Transactor[IO]): IO[Int] = {
         val addUser = sql"INSERT INTO User_Guild (user_id, guild_id) VALUES ($userId, $guildId)"
@@ -228,11 +205,11 @@ object Guild {
     // Version individuelle : même système que les demandes d'ami
 
     // on pourrait rajouter (qui a envoyé l'invitation) pour plus tard
-    def sendGuildInvite(guildInviteInput: GuildInviteInput, xa: Transactor[IO]): IO[Int] = {
+    def sendGuildInvite(user_id: UUID, guild_id: UUID, xa: Transactor[IO]): IO[Int] = {
         val insertGuildInvite =
         sql"""
             INSERT INTO User_Guild (user_id, guild_id, invite_accepted)
-            VALUES (${guildInviteInput.user_id}, ${guildInviteInput.guild_id}, 0)
+            VALUES (${user_id.toString}, ${guild_id.toString}, 0)
         """.update.run
         insertGuildInvite.transact(xa)
     }
@@ -248,103 +225,56 @@ object Guild {
         .transact(xa)
     }
 
-    def declineGuildInvite(guildInviteInput :GuildInviteInput, xa: Transactor[IO]): IO[Int] = {
+    def declineGuildInvite(user_id: UUID, guild_id:UUID, xa: Transactor[IO]): IO[Int] = {
         sql"""
             DELETE FROM User_Guild WHERE 
-            user_id = ${guildInviteInput.user_id} AND guild_id = ${guildInviteInput.guild_id}
+            user_id = ${user_id.toString} AND guild_id = ${guild_id.toString}
         """.update.run
         .transact(xa)
     }
 
-    def acceptGuildInvite(guildInviteInput: GuildInviteInput, xa: Transactor[IO]): IO[Int] = {
+    def acceptGuildInvite(user_id: UUID, guild_id:UUID, xa: Transactor[IO]): IO[Int] = {
         sql"""
             UPDATE User_Guild SET invite_accepted = 1 WHERE 
-            user_id = ${guildInviteInput.user_id} AND guild_id = ${guildInviteInput.guild_id}
+            user_id = ${user_id.toString} AND guild_id = ${guild_id.toString}
         """.update.run
-        .transact(xa)
+          .transact(xa)
     }
-
-
-    //////////////////////// GUILD INVITES #2 //////////////////////////
-
-    // Version communautaire : avec des liens d'invitations (pour plus tard car nécessite la mise en place de la messagerie)
-
-    // def generateInviteCode(): String = {
-    //     val randomBytes = new Arrayrate a short 6-byte random string
-    //     Random.nextBytes(randomBytes)
-    //     Base64.getUrlEncoder.withoutPadding().encodeToString(randomBytes)
-    // }
-
-    // def createGuildInvite(guildId: UUID, creatorId: UUID, maxUses: Int, xa: Transactor[IO]): IO[String] = {
-    //     val inviteCode = generateInviteCode()
-    //     val expirationTime = Instant.now().plusSeconds(3600) // valide une heure (je rajouterai le cas Unlimited plus tard)
-
-    //     sql"""
-    //         INSERT INTO Guild_Invites (invite_code, guild_id, creator_id, max_uses, expires_at)
-    //         VALUES ($inviteCode, $guildId, $creatorId, $maxUses, $expirationTime)
-    //     """.update.run.transact(xa).map(_ => inviteCode)
-    // }
-
-    // def getInvite(inviteCode: String, xa: Transactor[IO]): IO[Option[(UUID, Int, Int, Instant)]] = {
-    //     sql"""
-    //         SELECT guild_id, max_uses, uses, expires_at 
-    //         FROM Guild_Invites 
-    //         WHERE invite_code = $inviteCode
-    //     """.query[(UUID, Int, Int, Instant)].option.transact(xa)
-    // }
-
-    // def joinGuildUsingInvite(inviteCode: String, userId: UUID, xa: Transactor[IO]): IO[Either[String, String]] = {
-    //     getInvite(inviteCode, xa).flatMap {
-    //         case Some((guildId, maxUses, uses, expiresAt)) =>
-    //             val now = Instant.now()
-    //             if (now.isAfter(expiresAt)) {
-    //                 IO.pure(Left("Invite expired"))
-    //             } else if (maxUses > 0 && uses >= maxUses) {
-    //                 IO.pure(Left("Invite unavailable"))
-    //             } else {
-    //                 sql"""
-    //                     UPDATE Guild_Invites SET uses = uses + 1 WHERE invite_code = $inviteCode
-    //                 """.update.run.transact(xa) *>
-
-    //                 // Insert à remplacer par addUserToGuild() une fois testé
-    //                 sql"""
-    //                     INSERT INTO User_Guild (user_id, guild_id) VALUES ($userId, $guildId)
-    //                 """.update.run.transact(xa).map(_ => Right("Successfully joined the guild"))
-    //             }
-            
-    //         case None => IO.pure(Left("Invalid invite code"))
-    //     }
-    // }
 
     /////////////////////////// GUILD ROUTES ///////////////////////////
 
-    // PLUS BESOIN DE METTRE Guild DANS LA ROUTE CAR IL EST DANS LE ROUTEUR
-    def guildRoutes(xa: Transactor[IO])= {
+    def guildRoutes(xa: Transactor[IO]) = {
         HttpRoutes.of[IO] {
             
             // Création de guilde
+            // tests de vérifs côté backend
             case req @ POST -> Root / "create" =>
-                req.as[Json].flatMap { json =>
-                    val guildName = json.hcursor.get[String]("guildName").getOrElse("")
-                    val guildDescription = json.hcursor.get[String]("guildDescription").getOrElse("")
-                    val ownerIdStr = json.hcursor.get[String]("ownerId").getOrElse("")
+                req.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                    val token = header.head.value.stripPrefix("Bearer ")
+                    val userIdFromToken = Authentification.decodeToken(token)
 
-                    if (guildName.nonEmpty && ownerIdStr.nonEmpty) {
-                        val ownerId = UUID.fromString(ownerIdStr)
+                    req.as[Json].flatMap { json =>
+                        val guildName = json.hcursor.get[String]("guildName").getOrElse("")
+                        val guildDescription = json.hcursor.get[String]("guildDescription").getOrElse("")
+
+                        if (guildName.nonEmpty) {
+                        val ownerId = UUID.fromString(userIdFromToken)
                         createGuild(guildName, guildDescription, ownerId, xa).flatMap { guildId =>
                             Ok(Json.obj(
-                                "message" -> Json.fromString("Serveur créé avec succès"),
-                                "guildId" -> Json.fromString(guildId.toString)
+                            "message" -> Json.fromString("Serveur créé avec succès"),
+                            "guildId" -> Json.fromString(guildId.toString)
                             ))
                         }
-                    } else {
-                        BadRequest(Json.obj("error" -> Json.fromString("Le nom du serveur et l'ID du propriétaire sont obligatoires.")))
+                        } else {
+                        BadRequest(Json.obj("error" -> Json.fromString("Le serveur nécessite un nom")))
+                        }
                     }
+
+                    case None =>
+                    BadRequest("Token manquant")
                 }
             
-            // READ
-            // Update : retourne un objet JSON de tous les attributs au lieu d'un tuple de l'id et du nom
-            // ça facilite grandement l'accès aux données dans le front
             case GET -> Root / UUIDVar(id) =>
                 getGuildById(id, xa).flatMap {
                     case Some((id, guildName, guildDesc, ownerId)) =>
@@ -372,50 +302,28 @@ object Guild {
                     Ok(users.asJson)
                 }
             
-            //// UPDATE ??
-
-
-            //// DELETE
-
-            // Version sans vérification de l'ownership
-            // case DELETE -> Root / UUIDVar(id) =>
-            //     getGuildById(id, xa).flatMap {
-            //         guildOption =>
-            //             guildOption match {
-            //                 case Some(guild) => 
-            //                     deleteGuild(id, xa).flatMap {
-            //                         result =>
-            //                             Ok(s"Users removed : $result")
-            //                     }
-            //                 case None => 
-            //                     NotFound(s"Couldn't delete Guild with id $id : not found")
-            //             }
-            //     }
             
-            // Suppression de guilde après vérification de l'ownership (WIP, ne reconnait pas encore l'owner de la guilde)
-            case req @ DELETE -> Root / UUIDVar(guildId) =>
-                req.headers.get(ci"Authorization").map(_.head) match {
-                    case Some(authHeader) =>
-                        val token = authHeader.value.replace("Bearer ", "")
-                        getUserIdFromJWT(token) match {
-                            case Some(requestingUserId) =>
-                                getGuildById(guildId, xa).flatMap {
-                                    case Some((_, _, _, ownerId)) if ownerId == requestingUserId =>
-                                        deleteGuild(guildId, xa).flatMap { result =>
-                                            Ok(Json.obj("message" -> Json.fromString("Guild deleted"), "rows_deleted" -> Json.fromInt(result)))
-                                        }
-                                    case Some(_) =>
-                                        Forbidden(Json.obj("error" -> Json.fromString("You are not the owner of this guild")))
-                                    case None =>
-                                        NotFound(Json.obj("error" -> Json.fromString("Guild not found")))
+            // Suppression de guilde après vérification de l'ownership
+            case r @ DELETE -> Root / UUIDVar(guildId) =>
+                r.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
+
+                        val userIdFromToken = Authentification.decodeToken(token)
+                        getGuildOwnerId(guildId, xa).flatMap {
+                            case Some(ownerId) =>
+                                if (ownerId.toString == userIdFromToken) {
+                                    deleteGuild(guildId, xa).flatMap { result =>
+                                        Ok(Json.obj("message" -> Json.fromString("Guild deleted"), "rows_deleted" -> Json.fromInt(result)))
+                                    }
+                                } else {
+                                    Forbidden(Json.obj("error" -> Json.fromString("You are not the owner of this guild")))
                                 }
                             case None =>
-                                // C'est pas le bon code de retour mais IMPOSSIBLE de faire fonctionner Unauthorized (skill issue)
-                                Forbidden(Json.obj("error" -> Json.fromString("Invalid token")))
+                                BadRequest(Json.obj("error" -> Json.fromString("Guild not found")))
                         }
-                    // Même problème ici
                     case None =>
-                        Forbidden(Json.obj("error" -> Json.fromString("Authorization header missing")))
+                        BadRequest(Json.obj("error" -> Json.fromString("Authorization header missing")))
                 }
 
 
@@ -428,65 +336,85 @@ object Guild {
             
             ///////////////////////////// GESTION DES INVITATIONS ///////////////////
 
-            // RAJOUTER DES TESTS POUR VOIR SI LA GUILD EXISTE
-            
+
             case r @ POST -> Root / "invites" / "add" =>
-                r.as[GuildInviteInput].attempt.flatMap {
-                    case Right(guildInput) =>
-                        if (guildInput.user_id.nonEmpty && guildInput.guild_id.nonEmpty) {
-                            getGuildById(UUID.fromString(guildInput.guild_id), xa).flatMap {
-                                case Some(_) =>
-                                    sendGuildInvite(guildInput, xa).flatMap { result =>
-                                        Ok(s"Rows affected: $result")
-                                    }
-                                case None =>
-                                    BadRequest("Guild not found")
+
+                r.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
+
+                        val userIdFromToken = Authentification.decodeToken(token)
+                        r.as[Json].flatMap { json =>
+                            val guild_id = json.hcursor.get[String]("guild_id").getOrElse("")
+                            if (guild_id.isEmpty) {
+                                BadRequest("Guild ID must not be empty")
                             }
-                        } else {
-                            BadRequest("IDs must not be empty")
+                            val invited_id = json.hcursor.get[String]("invited_id").getOrElse("")
+                            if (invited_id.isEmpty) {
+                                BadRequest("Invited ID must not be empty")
+                            }
+
+                            sendGuildInvite(UUID.fromString(invited_id), UUID.fromString(guild_id), xa).flatMap { result =>
+                                Ok(s"Rows affected: $result")
+                            }
                         }
-                    case Left(_) =>
-                        BadRequest("Bad Request. Format { user_id: String, friend_id: String }")
-                    }
+                    case None =>
+                        BadRequest("Token not found")
+                }
 
             
             // pour afficher les requests "en attente" et de qui elles viennent
-            case GET -> Root / "invites" / UUIDVar(uuid) =>
-                getGuildInvitesGuildnames(uuid, xa).flatMap { invites =>
-                    Ok(invites.asJson)
-                }
+            case r @ GET -> Root / "invites" =>
+                r.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
 
-
-            // Refuse une friend request
-            // j'hésite a en faire une route DELETE  
-            // psk techniquement, ça fait supprimer un truc
-            case r @ POST -> Root / "invites" / "decline" =>
-                r.as[GuildInviteInput].attempt.flatMap {
-                        case Right(guildInput) =>
-                            if (guildInput.user_id.nonEmpty && guildInput.guild_id.nonEmpty) {
-                                declineGuildInvite(guildInput, xa).flatMap { result =>
-                                    Ok(s"Rows affected: $result")
-                                }
-                            } else {
-                                BadRequest("IDs must not be empty")
+                        val userIdFromToken = Authentification.decodeToken(token)
+                        // r.as[Json].flatMap { json =>
+                            // val guild_id = json.hcursor.get[String]("guild_id").getOrElse("")
+                            getGuildInvitesGuildnames(UUID.fromString(userIdFromToken), xa).flatMap { result =>
+                                Ok(result.asJson)
                             }
-                        case Left(_) =>
-                            BadRequest("Bad Request. Format { user_id: String, friend_id: String }")
-                }
+                        // }
 
+                    case None =>
+                        BadRequest("Token not found")
+                }
 
             case r @ POST -> Root / "invites" / "accept" =>
-                r.as[GuildInviteInput].attempt.flatMap {
-                    case Right(guildInput) =>
-                        if (guildInput.user_id.nonEmpty && guildInput.guild_id.nonEmpty) {
-                            acceptGuildInvite(guildInput, xa).flatMap { result =>
+                r.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
+
+                        val userIdFromToken = Authentification.decodeToken(token)
+                        r.as[Json].flatMap { json =>
+                            val guild_id = json.hcursor.get[String]("guild_id").getOrElse("")
+                            acceptGuildInvite(UUID.fromString(userIdFromToken), UUID.fromString(guild_id), xa).flatMap { result =>
                                 Ok(s"Rows affected: $result")
                             }
-                        } else {
-                            BadRequest("IDs must not be empty")
                         }
-                    case Left(_) =>
-                        BadRequest("Bad Request. Format { user_id: String, friend_id: String }")
+
+                    case None =>
+                        BadRequest("Token not found")
+                }
+
+            // Refuse une friend request
+            // Pourrait etre une route DELETE  
+            case r @ POST -> Root / "invites" / "decline" =>
+                r.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
+
+                        val userIdFromToken = Authentification.decodeToken(token)
+                        r.as[Json].flatMap { json =>
+                            val guild_id = json.hcursor.get[String]("guild_id").getOrElse("")
+                            declineGuildInvite(UUID.fromString(userIdFromToken), UUID.fromString(guild_id), xa).flatMap { result =>
+                                Ok(s"Rows affected: $result")
+                            }
+                        }
+
+                    case None =>
+                        BadRequest("Token not found")
                 }
 
 

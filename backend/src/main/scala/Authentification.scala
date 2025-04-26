@@ -7,7 +7,6 @@ import org.http4s.dsl.io._
 import org.http4s.circe.CirceEntityDecoder._
 
 import cats.effect.IO
-// import cats.effect.concurrent.Ref
 import cats.implicits._
 import doobie.util.transactor.Transactor
 import doobie.implicits._
@@ -20,6 +19,8 @@ import scala.util.{Success, Failure}
 import java.time.Instant
 import pdi.jwt.{JwtAlgorithm, JwtCirce, JwtClaim}
 import io.circe.Json
+import io.circe.parser.decode
+import io.circe.generic.auto._
 
 
 import at.favre.lib.crypto.bcrypt.BCrypt
@@ -27,77 +28,39 @@ import at.favre.lib.crypto.bcrypt.BCrypt
 import User.addUser
 
 
-// ça commence a etre long dans user et dans guild
-// on va gerer les connexion ici
-// comme pour le PFE avec les JWT, c'était facile et pratique
-// espérons la meme en scala
 object Authentification {
     // https://jwt-scala.github.io/jwt-scala/jwt-circe.html
 
     val key = "secretkey"
     val algo = JwtAlgorithm.HS256
 
-
-    // val userId = 88
-    // val claim = JwtClaim(
-    //     content = s"""{"userId": $userId}""",
-    //     expiration = Some(Instant.now.plusSeconds(3600).getEpochSecond),
-    //     issuedAt = Some(Instant.now.getEpochSecond)
-    // )
-    // val token = JwtCirce.encode(claim, key, algo)
-
-    // println(s"Token généré : $token")
-
-    // val decoded = JwtCirce.decode(token, key, Seq(JwtAlgorithm.HS256))
-
-    // println(s"Token décodé : $decoded")
-
-    // val decodedjson = JwtCirce.decodeJson(token, key, Seq(JwtAlgorithm.HS256))
-
-    // println(s"Token décodé en JSON : $decodedjson")
-
-    // val jsonString = """{"name": "Peter", "age": 13, "pets": ["Toolkitty", "Scaniel"]}"""
-    // val json: ujson.Value  = ujson.read(jsonString)
-    // println(json("name").str)
-
-    // val reponse: ujson.Value = ujson.read(decodedjson)
-    // println(reponse("userId").str)
-
-    // decodedjson match {
-    //     case Success(json) =>
-    //         val jsonString = json.noSpaces
-    //         val reponse: ujson.Value = ujson.read(jsonString)
-    //         println(reponse("userId").num.toInt)
-    //         println(reponse("userId").num)
-    //     case Failure(exception) =>
-    //         println(s"exception : $exception")
-    // }
-
-
-    // def main(args: Array[String]): Unit = {
-    //     println(s"Token généré : $token")
-    //     println(s"Token décodé : $decoded")
-    //     println(s"Token décodé en JSON : $decodedjson")
-    // }
-
-
     implicit val uuidMeta: Meta[UUID] = Meta[String].imap[UUID](UUID.fromString)(_.toString)
 
 
     def generateToken(user_id: UUID): String = {
         val claim = JwtClaim(
-            content = s"""{"user_id": $user_id}""",
+            content = s"""{"user_id": "${user_id.toString}"}""",
             expiration = Some(Instant.now.plusSeconds(3600).getEpochSecond),
             issuedAt = Some(Instant.now.getEpochSecond)
         )
         JwtCirce.encode(claim, key, algo)
     }
 
+    def decodeToken(token: String): String = {
+        val decodedToken = JwtCirce.decode(token, key, Seq(algo)) 
+        decodedToken match {
+            case Success(claim) =>
+                val json = io.circe.parser.parse(claim.content).getOrElse(Json.Null)
+                val userIdFromToken = json.hcursor.get[String]("user_id").getOrElse("")
+                userIdFromToken
+            case Failure(error) =>
+                s"Error JWT: $error"
+            }
+    }
+
     // ça fait un peu redondant avec la UserRoute mais bon jsavais pas trop comment faire autrement
-    
     // encrypter les passwords
     // la route fetch que le user en fonction de ses données donc elle login pas vraiment
-    // A modifier pour Email psk en fait on peut avoir plusieurs usernames identiques
     def loginUser(email: String, password: String, xa: Transactor[IO]): IO[Option[UUID]] = {
         
         sql"SELECT user_id, password FROM User WHERE email = $email LIMIT 1"
@@ -118,7 +81,7 @@ object Authentification {
         }
     }
 
-    // encrypter le password
+    // delegue l'encryption du password a addUser
     def registerUser(username: String, email: String, password: String, xa: Transactor[IO]): IO[Int] = {
         val userInput = UserInput(username, password, email)
         addUser(userInput, xa)
@@ -126,23 +89,6 @@ object Authentification {
 
     def authentificationRoutes(xa: Transactor[IO])= {
         HttpRoutes.of[IO] {
-
-            // case r @ POST -> Root / "register" =>
-            //     r.as[String].flatMap { body =>
-
-            //         println(s"Received body: $body")
-            //         val json = ujson.read(body)
-            //         println(s"json: $json")
-            //         val username = json("username").str
-            //         val password = json("password").str
-            //         val username = json("username").str.getOrElse("")
-            //         val password = json("password").str.getOrElse("")
-            //         println(s" username: $username, password: $password")
-
-            //         registerUser(username, password, xa).flatMap { userId =>
-            //             Ok(ujson.Obj("message" -> "User registered successfully", "userId" -> userId).asJson)                }
-            //     }     
-
             
             case r @ POST -> Root / "register" =>
                 r.as[Json].flatMap { json =>
@@ -172,6 +118,5 @@ object Authentification {
                 }
         }
     }
-    
 }
 

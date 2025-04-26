@@ -7,7 +7,6 @@ import org.http4s.dsl.io._
 import org.http4s.circe.CirceEntityDecoder._
 
 import cats.effect.IO
-// import cats.effect.concurrent.Ref
 import cats.implicits._
 import doobie.util.transactor.Transactor
 import doobie.implicits._
@@ -19,8 +18,6 @@ import io.circe.Json
 
 import at.favre.lib.crypto.bcrypt.BCrypt
 
-// import com.github.t3hnar.bcrypt._
-// import scala.util.{Success, Failure}
 
 case class UserOutput(uuid: UUID, username: String)
 
@@ -32,9 +29,7 @@ object User {
     implicit val uuidMeta: Meta[UUID] = Meta[String].imap[UUID](UUID.fromString)(_.toString)
 
 
-    // on peut pas faire += comme tout le monde...
     // https://www.oreilly.com/library/view/scala-cookbook/9781449340292/ch11s04.html
-    // renommer en create plus tard (add on dirait que c'est pour rajouter dans la guild)
     def addUser(user: UserInput, xa: Transactor[IO]): IO[Int] = {
     
         val hashedPassword = BCrypt.withDefaults().hashToString(12, user.password.toCharArray)

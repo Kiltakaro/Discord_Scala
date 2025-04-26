@@ -1,6 +1,8 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import {useRoute, useRouter} from 'vue-router';
+// tuto context menu (goatesque): https://medium.com/@sj.anyway/custom-right-click-context-menu-in-vue3-b323a3913684
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import MenuView from "@/views/MenuView.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -11,11 +13,40 @@ const token = localStorage.getItem("token");
 const user_id = localStorage.getItem("user_id");
 const owner = ref(false);
 const users = ref([]);
+const messages = ref([]); // c'est les msg du channel
+const newMessage = ref(""); // c'est le msg que le user écrit
+const actualChannel = ref(null); // channel actuel
 
+const selectedUser = ref(null); //Pour la fiche profile
+const showUserProfile = ref(false);
+
+
+const channels_in_guild = ref([]);
 // pour les invitations
 const username = ref('');
 const users_in_guild = ref([]);
+let refreshInterval = ref(null); // Pour le chargement des messages
 
+// Context menu variables
+// ON SE SERT DE ÇA LE + POSSIBLE SI ON PEUT, ÇA ÉVITE DE SPAM LES BOUTONS PARTOUT
+const showMenuChannel = ref(false);
+const showMenuUser = ref(false);
+const targetChannelId = ref(""); // Utilisé pour déterminer sur quel channel on a fait clic droit
+const targetUserId = ref(""); // Sur quel user on a fait clic droit
+const menuX = ref(0);
+const menuY = ref(0);
+const contextMenuActionsChannel = ref([
+    { label: 'Supprimer', action: 'delete' }
+]);
+
+const contextMenuActionsUser = ref([
+    { label: 'Expulser', action: 'kick' },
+    { label: 'Bannir', action: 'ban' }
+]);
+
+if (!token) {
+    router.push("/login");
+}
 
 const searchUsers = async () => {
     // la liste des users ayant un nom similaire qui va se remplir
@@ -45,7 +76,7 @@ const searchUsers = async () => {
 
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur de la recherche de l'utilisateur : " + error;
     }
 };
 
@@ -53,18 +84,9 @@ const searchUsers = async () => {
 // soit un truc qui marche temporairement
 // soit un truc qui est permanent avec une requete a l'api
 const inviteUserToGuild = async (invited_id) => {
-
-    if (!user_id) {
-        return;
-    }
     if (!invited_id) {
         return;
     }
-
-    const invitedInput = {
-        user_id: invited_id,
-        guild_id: guildId.value,
-    };
 
     // On protege les routes
     // seul un utilisateur connecté peut chercher des amis
@@ -90,7 +112,7 @@ const inviteUserToGuild = async (invited_id) => {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`,
             },
-            body: JSON.stringify(invitedInput)
+            body: JSON.stringify({ invited_id: invited_id, guild_id: guildId.value })
         });
 
         if (!inviteResponse.ok) {
@@ -100,7 +122,7 @@ const inviteUserToGuild = async (invited_id) => {
 
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur de l'invitation au serveur : " + error;
     }
 };
 
@@ -119,15 +141,12 @@ const fetchGuild = async () => {
         }
 
         const data = await response.json();
-        console.log("Guild data :", data);
 
         if (data.guild_name) {
-            console.log("Données reçues");
             guild.value = data;
 
             if (guild.value.owner_id == user_id) {
                 owner.value = true;
-                console.log("propriétaire du serveur");
             }
         } else {
             errorMessage.value = "Aucune donnée reçue";
@@ -152,12 +171,78 @@ const fetchUsersInGuild = async () => {
         }
 
         users_in_guild.value = await response.json();
-        console.log("Users :", users_in_guild.value);
 
     } catch (error) {
         errorMessage.value = "Erreur de chargement des utilisateurs du serveur";
     }
 };
+
+const fetchChannelsInGuild = async () => {
+    try {
+        const response = await fetch(`http://localhost:8080/channels/guilds/${guildId.value}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        channels_in_guild.value = await response.json();
+    } catch (error) {
+        errorMessage.value = `Erreur lors de la récupération des channels : ${error}`;
+    }
+};
+
+const deleteChannel = async (channelId) => {
+    try {
+        const response = await fetch(`http://localhost:8080/channels/${channelId}/guilds/${guildId.value}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        await fetchChannelsInGuild();
+    } catch (error) {
+        errorMessage.value = `Erreur lors de la suppression du channel : ${error}`;
+    }
+}
+
+const getChannelMessages = async (channelId) => {
+
+    if (!channelId) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`http://localhost:8080/messages/channel/${channelId}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            return;
+        }
+
+        messages.value = await response.json();
+        actualChannel.value = channelId;
+
+        // va chercher les messages du channel a interval régulier
+        stopAutoRefresh(); // arrête l'ancien pooling
+        startAutoRefresh();
+
+    } catch (error) {
+        errorMessage.value = "Erreur lors du chargement du channel : " + error;
+    }
+}
 
 const banUser = async (banned_id) => {
 
@@ -189,12 +274,11 @@ const banUser = async (banned_id) => {
         if (!response.ok) {
             throw new Error(`Erreur : ${response.status}`);
         }
-        console.log("Banned id :", banned_id);
         alert("L'utilisateur a bien été banni du serveur");
         await fetchUsersInGuild();
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur du bannissement de l'utilisateur : " + error;
     }
 }
 
@@ -230,11 +314,16 @@ const kickUser = async (kicked_id) => {
         fetchUsersInGuild();
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur de l'expulsion de l'utilisateur : " + error;
     }
 }
 
 const deleteGuild = async () => {
+    const confirmation = confirm("Êtes-vous sûr de vouloir supprimer ce serveur ?");
+    if (!confirmation) {
+        return;
+    }
+
     try {
         const response = await fetch(`http://localhost:8080/guilds/${guildId.value}`, {
             method: "DELETE",
@@ -252,26 +341,139 @@ const deleteGuild = async () => {
             throw new Error("Failed to delete the server");
         }
 
-        alert("Serveur supprimé");
         router.push("/serverList");
     } catch (error) {
-        console.error(error);
-        alert("Erreur lors de la suppression");
+        errorMessage.value = "Erreur de la suppression du serveur : " + error;
+        router.push("/serverList");
     }
 };
 
-const banListRedirect = async (guild_id) => {
-    router.push(`/server/${guild_id}/bans`);
+const sendMessage = async () => {
+    // A FIX CECI ACCEPTE MEME LES MSG VIDE VISIBLEMENT
+    if (newMessage === "") {
+        errorMessage.value = "Le message ne peut pas être vide";
+        return;
+    }
+
+    try {
+        const response = await fetch(`http://localhost:8080/messages/channel/${actualChannel.value}/send`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                content: newMessage.value
+            }),
+        });
+
+        if (!response.ok) {
+            errorMessage.value = "Erreur interne";
+            return;
+        }
+
+        newMessage.value = ""; // remise a 0 du msg pour eviter de devoir supprimer son ancien msg a chaque fois lol
+        errorMessage.value = null; // reset de l'erreur
+
+    } catch (error) {
+        errorMessage.value = "Erreur lors de l'envoi du message : " + error;
+    }
+}
+
+// Charge les msg toutes les 3 secs
+const startAutoRefresh = () => {
+    refreshInterval = setInterval(() => {
+        getChannelMessages(actualChannel.value);
+    }, 3000);
+};
+
+// arrête le pooling
+// A ne surtout pas ENLEVER, sans ça la requete va se dédoubler
+const stopAutoRefresh = () => {
+    clearInterval(refreshInterval);
+    refreshInterval = null;
+};
+
+// Affiche un menu en faisant clic droit sur un channel
+const displayMenuChannel = (event, channelId) => {
+    event.preventDefault();
+    showMenuChannel.value = true;
+    targetChannelId.value = channelId;
+    menuX.value = event.clientX;
+    menuY.value = event.clientY;
+};
+
+const displayMenuUser = (event, userId) => {
+    if (user_id === userId) return;
+
+    event.preventDefault();
+    showMenuUser.value = true;
+    targetUserId.value = userId;
+    menuX.value = event.clientX;
+    menuY.value = event.clientY;
+}
+
+// Permet de fermer le menu (pas entièrement fonctionnel pour le moment)
+const closeMenu = () => {
+    showMenuChannel.value = false;
+    showMenuUser.value = false;
+};
+
+// Ici on peut éventuellement gérer d'autres actions genre edit, etc
+const handleMenuActionsChannel = (action) => {
+    if (action === 'delete') {
+        deleteChannel(targetChannelId.value);
+    }
+    closeMenu();
+};
+
+const handleMenuActionsUser = (action) => {
+    switch (action) {
+        case 'kick':
+            kickUser(targetUserId.value);
+            break;
+
+        case 'ban':
+            banUser(targetUserId.value);
+            break;
+    }
+    closeMenu();
+}
+
+const banListRedirect = async () => {
+    await router.push(`/server/${guildId.value}/bans`);
+};
+
+const createChannelRedirect = async () => {
+    await router.push(`/server/${guildId.value}/create-channel`);
+};
+
+const openUserProfile = (user) => {
+
+    selectedUser.value = user;
+    showUserProfile.value = true;
+};
+
+const userPrivateMessagesRedirect = (user) => {
+    router.push(`/friends/${user.uuid}`);
 };
 
 onMounted(() => {
     fetchGuild();
     fetchUsersInGuild();
+    fetchChannelsInGuild();
 });
+
+// arrete le pooling quand on change de page
+onUnmounted(() => {
+    stopAutoRefresh();
+});
+
 </script>
 
 <template>
-    <div class="pr-64">
+    <div class="pr-64 pl-64">
+        <div class="fixed bg-transparent w-full h-full" @click="closeMenu" v-if="showMenuUser || showMenuChannel"></div>
         <div class="min-h-screen flex flex-col items-center bg-gray-900 text-white p-6">
             <h1 class="text-3xl font-bold mb-6">
                 Serveur: {{ guild?.guild_name || "Chargement..." }}
@@ -282,21 +484,20 @@ onMounted(() => {
                 va pas passer par dessus le texte et le rendre illisible psk ça serait vraiment dommage de pas pouvoir
                 observer un tel message</p>
 
-
             <!-- Ajouter des utilisateurs (Réservé a l'admin du serveur) -->
-            <!-- Faudra trouver un moyen plus stylé de faire ça -->
-            <div v-if="owner" class="flex justify-center items-center">
+            <!-- Si pas de channel choisi ou 0 message dans les channels, l'admin est 'invité' à ajouter des utilisateurs -->
+            <div v-if="messages.length === 0 && owner" class="flex justify-center items-center">
                 <div class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white space-y-4">
-                    <h1 class="text-4xl font-bold">Rechercher des personnes au serveur</h1>
-
-                    <input v-model="username" @input="searchUsers" type="text" placeholder="Recherchez un ami"
+                    <h1 class="text-4xl font-bold text-center">Il n'y a aucun message ici ! Changez de channel ou
+                        invitez des gens sur le serveur</h1>
+                    <input v-model="username" @input="searchUsers" type="text" placeholder="Ajoutez quelqu'un"
                         class="px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 w-full max-w-4xl">
-                        <div v-for="user in users" :key="user.user_id"
+                        <div v-for="user in users" :key="user.uuid"
                             class="bg-gray-800 p-6 rounded-lg shadow-md flex justify-between items-center">
                             <span class="text-xl font-bold">{{ user.username }}</span>
-                            <button @click="inviteUserToGuild(user.user_id)"
+                            <button @click="inviteUserToGuild(user.uuid)"
                                 class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
                                 Ajouter
                             </button>
@@ -305,6 +506,58 @@ onMounted(() => {
                             utilisateur
                             trouvé</div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Affichage des messages -->
+            <!-- A FIX L'AFFICHAGE DES MSG EST UN PEU RANDOM jusqu'a ce qu'on relance le serv  -->
+            <div class="mt-6 w-full bg-gray-800 p-4 rounded-lg">
+                <h2 class="text-xl font-bold mb-4">Messages</h2>
+                <ul>
+                    <li v-for="message in messages" :key="message.id" class="mb-2">
+                        <div class="flex items-start space-x-4"
+                            :class="{ 'justify-end': message.sender_id === user_id }">
+                            <div class="text-sm font-bold text-purple-400">{{ message.username }}</div>
+                            <div class="text-sm text-blue-300">{{ message.content }}</div>
+                            <!-- A FIX Faut mettre un format de date + stylé -->
+                            <div class="text-xs text-gray-300 ml-auto">{{ message.sent_at }}</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Liste des channels -->
+            <div
+                class="fixed left-0 top-2 bottom-0 w-64 bg-gray-800 p-4 border-r-4 border-gray-700 overflow-y-auto mt-16">
+                <h2 class="text-xl font-bold mb-4">Channels</h2>
+                <ul>
+                    <li v-for="channel in channels_in_guild" :key="channel.channelId"
+                        class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700"
+                        @click="getChannelMessages(channel.channelId)"
+                        @contextmenu.prevent="displayMenuChannel($event, channel.channelId)">
+                        {{ channel.name }}
+                    </li>
+                </ul>
+                <button v-if="owner" @click="createChannelRedirect()"
+                    class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
+                    Nouveau channel
+                </button>
+
+                <!-- affichage du menu clic droit pour les channels -->
+                <MenuView v-if="showMenuChannel && owner" :actions="contextMenuActionsChannel"
+                    @action-clicked="handleMenuActionsChannel" :x="menuX" :y="menuY" />
+            </div>
+
+            <!-- textbox pour ecire des messages -->
+            <div class="fixed bottom-0 left-64 right-64 bg-gray-800 p-4 border-t-4 border-gray-700">
+                <div class="flex items-center space-x-4">
+                    <textarea v-model="newMessage" placeholder="Écrire un message"
+                        class="flex-1 p-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <!-- A FIX le rendre disponible QUE SI CHANNEL NON NULL + MESSAGE NON NULL -->
+                    <button @click="sendMessage"
+                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
+                        Envoyer
+                    </button>
                 </div>
             </div>
 
@@ -317,23 +570,23 @@ onMounted(() => {
                     Supprimer le serveur
                 </button>
                 <ul>
-                    <li v-for="user in users_in_guild" :key="user.user_id"
-                        class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700">
-                        <span class="flex-1">{{ user.username }}</span>
-
-                        <!-- Visible que pour l'admin + empêche l'admin de se ban / kick lui-même -->
-                        <div v-if="owner && user_id !== user.uuid" class="flex space-x-2">
-                            <button @click="kickUser(user.user_id)"
-                                class="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg">
-                                Kick
-                            </button>
-                            <button @click="banUser(user.user_id)"
-                                class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg">
-                                Ban
-                            </button>
+                    <li v-for="user in users_in_guild" :key="user.uuid"
+                        class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700 cursor-pointer"
+                        @click="openUserProfile(user)" @contextmenu.prevent="displayMenuUser($event, user.uuid)">
+                        <!-- Avatar placeholder à récup si on fait des pfp-->
+                        <div class="flex items-center space-x-2 flex-1">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/9/95/Vue.js_Logo_2.svg"
+                                alt="avatar" class="h-6 w-6 rounded-full object-cover" />
+                            <span>{{ user.username }}</span>
                         </div>
+
+                        <!-- Menu contextuel pour admin -->
+                        <MenuView v-if="showMenuUser && owner" :actions="contextMenuActionsUser"
+                            @action-clicked="handleMenuActionsUser" :x="menuX" :y="menuY" />
                     </li>
+
                 </ul>
+
                 <button v-if="owner"
                     class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg"
                     @click="banListRedirect(guildId)">
@@ -342,4 +595,34 @@ onMounted(() => {
             </div>
         </div>
     </div>
+    <!-- Fiche utilisateur comme sur discord -->
+    <div v-if="showUserProfile" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+        <div class="bg-gray-800 p-6 rounded-xl w-96 shadow-lg text-white relative">
+            <button class="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+                @click="showUserProfile = false">x</button>
+
+            <!-- Avatar placeholder à récup si on fait des pfp-->
+            <div class="flex justify-center mb-4">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/9/95/Vue.js_Logo_2.svg" alt="Vue.js Logo"
+                    class="h-24 w-24 rounded-full object-cover bg-white p-2" />
+            </div>
+
+
+            <h2 class="text-center text-2xl font-bold">{{ selectedUser?.username }}</h2>
+
+            <!-- Rôles placeholder à récup si on fait des roles -->
+            <div class="flex flex-wrap justify-center gap-2 mb-4">
+                <span class="px-2 py-1 bg-yellow-600 rounded-full text-xs">Admin</span>
+                <span class="px-2 py-1 bg-red-600 rounded-full text-xs">Scalistes</span>
+                <span class="px-2 py-1 bg-blue-600 rounded-full text-xs">KC BLUE BLUE</span>
+            </div>
+
+            <!-- Bouton MP -->
+            <button class="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
+                @click="userPrivateMessagesRedirect(selectedUser)">
+                Envoyer un message privé
+            </button>
+        </div>
+    </div>
+
 </template>

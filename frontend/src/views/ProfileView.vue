@@ -12,9 +12,12 @@ const newPassword = ref("");
 const confirmPassword = ref("");
 const token = localStorage.getItem("token");
 const user_id = localStorage.getItem("user_id");
+const errorMessage = ref('');
 const user = ref(null);
 
-
+if (!token) {
+  router.push("/login");
+}
 
 //A supprimer si on décide de ne pas faire de pdp custom, ça dépend de la solution pour l'hébergement
 const changePfp = (event) => {
@@ -57,7 +60,7 @@ const changeUsername = async () => {
         fetchUserDetails();
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur du changement du pseudo" + error;
     }
 };
 
@@ -89,7 +92,7 @@ const changeEmail = async () => {
         fetchUserDetails();
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur lors du changement de l'email" + error;
     }
 };
 
@@ -130,7 +133,7 @@ const changePassword = async () => {
         alert("Mot de passe modifié !")
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur du changement du mot de passe" + error;
     }
 
 };
@@ -165,7 +168,7 @@ const deleteAccount = async () => {
         router.push('/login');
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur lors de la suppression du compte" + error;
     }
 };
 
@@ -195,7 +198,7 @@ const fetchUserDetails = async () => {
         console.log("User :", user.value);
 
     } catch (error) {
-        console.log(error);
+        errorMessage.value = "Erreur lors du chargement de vos informations" + error;
     }
 
 }
@@ -208,6 +211,7 @@ onMounted(() => {
 
 <template>
     <div class="min-h-screen flex flex-col items-center bg-gray-900 text-white p-6">
+        <div v-if="errorMessage" class="text-red-500">{{ errorMessage }}</div>
 
         <div class="flex flex-col items-center mb-6">
             <img :src="profileImage"
