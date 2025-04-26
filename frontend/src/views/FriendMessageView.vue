@@ -38,7 +38,7 @@ const getFriendshipIdFromUserIds = async () => {
         });
 
         if (!response.ok) {
-            errorMessage.value = `Erreur lors de la récupération de l'ID de l'amitié` ;
+            errorMessage.value = `Erreur lors de la récupération de l'ID de l'amitié`;
             return;
         }
 
@@ -130,12 +130,25 @@ const getChannelMessages = async () => {
     }
 }
 
+const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
+
+
 const sendMessage = async () => {
-    // A FIX CECI ACCEPTE MEME LES MSG VIDE VISIBLEMENT
-    if (newMessage === "") {
+
+    if (newMessage.value.trim() === "") {
         errorMessage.value = "Le message ne peut pas être vide";
         return;
     }
+
 
     try {
         const response = await fetch(`http://localhost:8080/messages/channel/${actualChannel.value}/send`, {
@@ -177,7 +190,7 @@ const stopAutoRefresh = () => {
 };
 
 // c'est un peu le bordel mais c'est logique
-onMounted(async() => {
+onMounted(async () => {
     await getFriendshipIdFromUserIds(); // on recup l'id de la friendship
     if (friendshipId.value) {
         await getChannelFromFriendship(); // grace a friendship_id on trouve le channel
@@ -185,7 +198,7 @@ onMounted(async() => {
             await getChannelFromFriendship(); // on recherche le channel a partir de friendship_id a nouveau psk un channel existe forcément
         }
         if (actualChannel.value) { // mtn on peu fetch les msgs
-             await getChannelMessages();
+            await getChannelMessages();
         }
     }
 });
@@ -211,8 +224,7 @@ onUnmounted(() => {
                     <div class="flex items-start space-x-4" :class="{ 'justify-end': message.sender_id === user_id }">
                         <div class="text-sm font-bold text-purple-400">{{ message.username }}</div>
                         <div class="text-sm text-blue-300">{{ message.content }}</div>
-                        <!-- A FIX Faut mettre un format de date + stylé -->
-                        <div class="text-xs text-gray-300 ml-auto">{{ message.sent_at }}</div>
+                        <div class="text-xs text-gray-300 ml-auto">{{ formatDate(message.sent_at) }}</div>
                     </div>
                 </li>
             </ul>
