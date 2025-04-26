@@ -123,7 +123,6 @@ object Channel {
 
             ////////////////////////// POUR LES DM ///////////////////////////
 
-            // JAI PASSE 2 JOURS PSK JAVAIS ECRIS FREINDS JVAIIIIIIIIIS TOUT CASSERRRRRRRR
             case req@GET -> Root / "friends" / UUIDVar(friendshipId) =>
                 req.headers.get(ci"Authorization") match {
                     case Some(header) =>

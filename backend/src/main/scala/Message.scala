@@ -31,10 +31,10 @@ object Message {
             JOIN User user
             ON msg.sender_id = user.user_id
             WHERE msg.channel_id = $channel_id
+            ORDER BY msg.sent_at ASC
         """.query[MessageOutput].to[List].transact(xa)
     }
 
-    // ON NE VA FAIRE EN SORTE DE SUPPRIMER LES MSG QUE SUR LES SERVS ET PAS EN DM
     def deleteMessage(channelId: UUID, messageId: UUID, xa: Transactor[IO]): IO[Int] = {
         sql"""
             DELETE FROM Message

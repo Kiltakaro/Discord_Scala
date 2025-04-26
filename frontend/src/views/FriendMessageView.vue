@@ -18,7 +18,6 @@ let refreshInterval = ref(null); // Pour le chargement des messages
 const friendshipId = ref(null);
 const channelCreated = ref(false); // savoir si le channel a été créé (cas particulier)
 
-console.log(token); // Pour les tests postman
 if (!token) {
     router.push("/login");
 }
@@ -51,47 +50,6 @@ const getFriendshipIdFromUserIds = async () => {
     }
 }
 
-// const createChannelIfNotExists = async () => {
-//     try {
-//         // verification si le channel existe 
-//         const response = await fetch(`http://localhost:8080/channels/friends/${friendshipId.value}`, {
-//             method: "GET",
-//             headers: {
-//                 "Content-Type": "application/json",
-//                 "Authorization": `Bearer ${token}`,
-//             },
-//         });
-
-//         if (response.status === 404) {
-//             try {
-//                 const responseCreateChannel = await fetch(`http://localhost:8080/channels/friends/${friendshipId.value}`, {
-//                     method: "POST",
-//                     headers: {
-//                         "Content-Type": "application/json",
-//                         "Authorization": `Bearer ${token}`,
-//                     },
-//                 });
-//                 if (!responseCreateChannel.ok) {
-//                     return;
-//                 }
-
-//             } catch (error) {
-//                 errorMessage.value = "Erreur lors de la creation du DM channel : " + error;
-//             }
-//         }
-//         if (!response.ok) {
-//             return;
-//         }
-
-//         // inutile de recup ici
-//         actualChannel.value = data.channel_id;
-
-//     } catch (error) {
-//         errorMessage.value = "Erreur lors de la recherche du channel : " + error;
-//     }
-// }
-
-
 
 const createChannel = async () => {
 
@@ -113,7 +71,6 @@ const createChannel = async () => {
         errorMessage.value = "Erreur lors de la creation du DM channel : " + error;
     }
 }
-
 
 
 const getChannelFromFriendship = async () => {

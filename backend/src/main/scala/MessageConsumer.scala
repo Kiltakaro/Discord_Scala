@@ -11,10 +11,8 @@ import java.time.ZonedDateTime
 
 
 object MessageConsumer {
-    // pareil dans producer
-    val topic = "messages"  // pour le moment j'envoie tout dans le topic message mais faudra arranger ça jpense
+    val topic = "messages"
     
-    // à changer peut etre si on passe au cloud
     val ip = "localhost:9092" // techniquement c'est ip + port mais jtrovue pas de nom stylé pour la var
 
     // https://fd4s.github.io/fs2-kafka/docs/quick-example

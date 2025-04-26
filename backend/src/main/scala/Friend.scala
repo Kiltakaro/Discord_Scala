@@ -7,7 +7,6 @@ import org.http4s.dsl.io._
 import org.http4s.circe.CirceEntityDecoder._
 
 import cats.effect.IO
-// import cats.effect.concurrent.Ref
 import cats.implicits._
 import doobie.util.transactor.Transactor
 import doobie.implicits._
@@ -56,8 +55,7 @@ object Friend {
         }
     }
 
-    // je viens de penser mais de cette façon la personne qui reçoit la demande est forcément le user2
-    // donc on aurait pu nommé user_id2 genre asked_friend ou un truc du genre
+    // la personne qui reçoit la demande est forcément le user2
     def getFriendRequestsUsernames(user_id: UUID, xa: Transactor[IO]): IO[List[(FriendRequestOutput)]] = {
         sql"""
             SELECT username, user_id1 FROM 
@@ -70,10 +68,7 @@ object Friend {
     }
 
     def declineFriendRequest(user_id: UUID, friend_id: UUID, xa: Transactor[IO]): IO[Int] = {
-        // si on prend ça du point de vue de l'utilisation c'est assez chiant
-        // psk c'est forcément celui qui a reçu qui fait ce choix
-        // psk le friend c'est celui qui a envoyé la demande
-        // donc on inverse les roles, le user_id est celui qui a reçu la demande
+        // le user actuel est celui qui a reçu la demande => user2
         sql"""
             DELETE FROM Friends WHERE 
             user_id1 = ${friend_id.toString} AND user_id2 = ${user_id.toString}
@@ -82,7 +77,7 @@ object Friend {
     }
 
     def acceptFriendRequest(user_id: UUID, friend_id: UUID, xa: Transactor[IO]): IO[Int] = {
-        // meme commentaire que pour decline
+        // le user actuel est celui qui a reçu la demande => user2
         sql"""
             UPDATE Friends SET request_accepted = 1 WHERE 
             user_id1 = ${friend_id.toString} AND user_id2 = ${user_id.toString}
@@ -92,31 +87,17 @@ object Friend {
 
     
     def getFriends(user_id: UUID, xa: Transactor[IO]): IO[List[FriendRequestOutput]] = {
-        // ça peut etre moi ou lui qui m'avait demandé en amis
-        // donc faut querry aux 2 id
-        
-        // pour des querry pareil, pour tester, utilisez 
-        // clickhouse-client
-        // j'en ai chié trop longtemps pour rien
-
-        // SELECT username, user_id2 FROM Friends
-        // JOIN User ON Friends.user_id2 = User.user_id
-        // WHERE user_id1 = $user_id AND request_accepted = 1
-        // UNION
-        // SELECT username, user_id1 FROM Friends
-        // JOIN User ON Friends.user_id1 = User.user_id
-        // WHERE user_id2 = $user_id AND request_accepted = 1
-
+        // user actuel peut etre user1 ou user2 faut check les 2
         sql"""
-        SELECT username, user_id2 FROM Friends 
-        INNER JOIN User ON Friends.user_id2 = User.user_id 
-        WHERE user_id1 =  $user_id AND request_accepted = 1 
+            SELECT username, user_id2 FROM Friends 
+            INNER JOIN User ON Friends.user_id2 = User.user_id 
+            WHERE user_id1 =  $user_id AND request_accepted = 1 
 
-        UNION ALL
+            UNION ALL
 
-        SELECT username, user_id1 FROM Friends 
-        INNER JOIN User ON Friends.user_id1 = User.user_id 
-        WHERE user_id2 = $user_id AND request_accepted = 1
+            SELECT username, user_id1 FROM Friends 
+            INNER JOIN User ON Friends.user_id1 = User.user_id 
+            WHERE user_id2 = $user_id AND request_accepted = 1
         """
         .query[FriendRequestOutput]
         .to[List]
@@ -152,25 +133,7 @@ object Friend {
                     case None =>
                         BadRequest("Token not found")
                 }
-
-            // case Right(friendInput) =>
-            //     if (friendInput.user_id.nonEmpty && friendInput.friend_id.nonEmpty) {
-            //         sendFriendRequest(friendInput, xa).flatMap { result =>
-            //             Ok(s"Rows affected: $result")
-            //         }
-            //     } else {
-            //         BadRequest("IDs must not be empty")
-            //     }
-            // case Left(_) =>
-            //     BadRequest("Bad Request. Format { user_id: String, friend_id: String }")
-            // }
-
             
-            // pour afficher les requests "en attente" et de qui elles viennent
-            // case GET -> Root / "requests" / UUIDVar(uuid) =>
-            //     getFriendRequestsUsernames(uuid, xa).flatMap { requests =>
-            //         Ok(requests.asJson)
-            //     }
 
             case r @ GET -> Root / "requests" =>
                 r.headers.get(ci"Authorization") match {
@@ -186,9 +149,7 @@ object Friend {
                 }
 
 
-            // Refuse une friend request
-            // j'hésite a en faire une route DELETE  
-            // psk techniquement, ça fait supprimer un truc
+            // pourrait etre une route delete
             case r @ POST -> Root / "decline" =>
                 r.headers.get(ci"Authorization") match {
                     case Some(header) =>
@@ -237,22 +198,22 @@ object Friend {
 
             // AJOUTER DE QUOI SUPPRIMER UN AMI DANS LE FRONT
             // suuprime un ami revient a refuser sa requete donc on pourrait appeler decline dans le front mais c'est moins "stylé"
-            // case r @ DELETE -> Root =>
-            //     r.headers.get(ci"Authorization") match {
-            //         case Some(header) =>
-            //             val token = header.head.value.stripPrefix("Bearer ")
-            //             val userIdFromToken = Authentification.decodeToken(token)
-            //             r.as[Json].flatMap { json =>
-            //                 val friendId = json.hcursor.get[String]("friend_id").getOrElse("")
-            //                 declineFriendRequest(UUID.fromString(userIdFromToken), UUID.fromString(friendId), xa).flatMap { result =>
-            //                     Ok(s"Rows affected: $result")
-            //                 }
-            //             }
-            //         case None =>
-            //             BadRequest("Token not found")
-            //     }
+            case r @ DELETE -> Root =>
+                r.headers.get(ci"Authorization") match {
+                    case Some(header) =>
+                        val token = header.head.value.stripPrefix("Bearer ")
+                        val userIdFromToken = Authentification.decodeToken(token)
+                        r.as[Json].flatMap { json =>
+                            val friendId = json.hcursor.get[String]("friend_id").getOrElse("")
+                            declineFriendRequest(UUID.fromString(userIdFromToken), UUID.fromString(friendId), xa).flatMap { result =>
+                                Ok(s"Rows affected: $result")
+                            }
+                        }
+                    case None =>
+                        BadRequest("Token not found")
+                }
 
-            // C'est pour recuperer friendship_id, sans ça c'est dur de trouver le channel de DM
+            // Recupere friendship_id pour trouver le channel associé
             case r @ GET -> Root / UUIDVar(friendId) =>
                 r.headers.get(ci"Authorization") match {
                     case Some(header) =>

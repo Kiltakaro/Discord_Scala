@@ -7,7 +7,6 @@ import org.http4s.dsl.io._
 import org.http4s.circe.CirceEntityDecoder._
 
 import cats.effect.IO
-// import cats.effect.concurrent.Ref
 import cats.implicits._
 import doobie.util.transactor.Transactor
 import doobie.implicits._
@@ -29,10 +28,6 @@ import at.favre.lib.crypto.bcrypt.BCrypt
 import User.addUser
 
 
-// ça commence a etre long dans user et dans guild
-// on va gerer les connexion ici
-// comme pour le PFE avec les JWT, c'était facile et pratique
-// espérons la meme en scala
 object Authentification {
     // https://jwt-scala.github.io/jwt-scala/jwt-circe.html
 
@@ -64,10 +59,8 @@ object Authentification {
     }
 
     // ça fait un peu redondant avec la UserRoute mais bon jsavais pas trop comment faire autrement
-    
     // encrypter les passwords
     // la route fetch que le user en fonction de ses données donc elle login pas vraiment
-    // A modifier pour Email psk en fait on peut avoir plusieurs usernames identiques
     def loginUser(email: String, password: String, xa: Transactor[IO]): IO[Option[UUID]] = {
         
         sql"SELECT user_id, password FROM User WHERE email = $email LIMIT 1"
@@ -88,7 +81,7 @@ object Authentification {
         }
     }
 
-    // encrypter le password
+    // delegue l'encryption du password a addUser
     def registerUser(username: String, email: String, password: String, xa: Transactor[IO]): IO[Int] = {
         val userInput = UserInput(username, password, email)
         addUser(userInput, xa)
