@@ -28,10 +28,12 @@ object Channel {
         """.query[ChannelOutput].to[List].transact(xa)
     }
 
+    // Limit 1 psk a force de faire des tests j'ai dupliqué le channel DM et ça faisait tout planter
     def getDMChannel(friendshipId: UUID, xa: Transactor[IO]): IO[Option[ChannelOutput]] = {
         sql"""
             SELECT * FROM Channel
             WHERE friendship_id = $friendshipId
+            limit 1
         """.query[ChannelOutput].option.transact(xa)
     }
 
@@ -121,8 +123,8 @@ object Channel {
 
             ////////////////////////// POUR LES DM ///////////////////////////
 
-
-            case req@GET -> Root / "freinds" / UUIDVar(friendshipId) =>
+            // JAI PASSE 2 JOURS PSK JAVAIS ECRIS FREINDS JVAIIIIIIIIIS TOUT CASSERRRRRRRR
+            case req@GET -> Root / "friends" / UUIDVar(friendshipId) =>
                 req.headers.get(ci"Authorization") match {
                     case Some(header) =>
                         val token = header.head.value.stripPrefix("Bearer ")
