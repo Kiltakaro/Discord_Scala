@@ -454,9 +454,8 @@ const openUserProfile = (user) => {
     showUserProfile.value = true;
 };
 
-//Je change des qu'on a les pages de chat
 const userPrivateMessagesRedirect = (user) => {
-    console.log(`redirect to ${user.username}`);
+    router.push(`/friends/${user.uuid}`);
 };
 
 onMounted(() => {
