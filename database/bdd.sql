@@ -82,18 +82,24 @@ CREATE TABLE IF NOT EXISTS User_DM_Channel (
 ) ENGINE MergeTree
 ORDER BY user_id;
 
--- Pour le moment on a pas besoin de ces deux dernières tables
--- Je les laisse au cas où on décide de gérer les rôles au final
--- ouais on garde pour le moment et jpense qu'on mettra des id normaux plutot que des uuid
 CREATE TABLE IF NOT EXISTS Role (
     role_id UUID DEFAULT generateUUIDv4(),
     guild_id UUID,
-    role_name String
+    role_name String,
+    priority UInt8,
+    creation_date DateTime DEFAULT now()
 ) ENGINE = MergeTree
 ORDER BY role_id;
 
 CREATE TABLE IF NOT EXISTS User_Role (
     user_id UUID,
+    guild_id UUID,
     role_id UUID
-) ENGINE MergeTree
-ORDER BY user_id;
+) ENGINE = MergeTree
+ORDER BY (user_id, role_id);
+
+CREATE TABLE IF NOT EXISTS Role_Permission (
+    role_id UUID,
+    permission_name String
+) ENGINE = MergeTree
+ORDER BY (role_id, permission_name);

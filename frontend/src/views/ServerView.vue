@@ -19,7 +19,7 @@ const actualChannel = ref(null); // channel actuel
 
 const selectedUser = ref(null); //Pour la fiche profile
 const showUserProfile = ref(false);
-
+const userRoles = ref([])
 
 const channels_in_guild = ref([]);
 // pour les invitations
@@ -29,6 +29,7 @@ let refreshInterval = ref(null); // Pour le chargement des messages
 
 // Context menu variables
 // ON SE SERT DE ÇA LE + POSSIBLE SI ON PEUT, ÇA ÉVITE DE SPAM LES BOUTONS PARTOUT
+const canManageRoles = ref(false)
 const showMenuChannel = ref(false);
 const showMenuUser = ref(false);
 const targetChannelId = ref(""); // Utilisé pour déterminer sur quel channel on a fait clic droit
@@ -46,6 +47,23 @@ const contextMenuActionsUser = ref([
 
 if (!token) {
     router.push("/login");
+}
+
+function manageRolesRedirect(user) {
+    if (!user) return;
+    router.push(`/server/${guildId.value}/manage-roles/${user.uuid}`);
+}
+
+const fetchWithAuth = async (url, options = {}) => {
+    const token = localStorage.getItem('token')
+    return fetch(`http://localhost:8080${url}`, {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            ...(options.headers || {})
+        }
+    })
 }
 
 const searchUsers = async () => {
@@ -241,6 +259,20 @@ const getChannelMessages = async (channelId) => {
 
     } catch (error) {
         errorMessage.value = "Erreur lors du chargement du channel : " + error;
+    }
+}
+
+const fetchUserRoles = async (userId) => {
+    try {
+        const res = await fetchWithAuth(`/roles/assigned/${userId}/${guildId.value}`)
+        if (res.ok) {
+            userRoles.value = await res.json()
+        } else {
+            userRoles.value = []
+        }
+    } catch (err) {
+        console.error('Failed to fetch user roles:', err)
+        userRoles.value = []
     }
 }
 
@@ -459,10 +491,14 @@ const createChannelRedirect = async () => {
     await router.push(`/server/${guildId.value}/create-channel`);
 };
 
-const openUserProfile = (user) => {
+const redirectManageGuildRoles = async () => {
+    await router.push(`/server/${guildId.value}/manage-roles`);
+}
 
+const openUserProfile = (user) => {
     selectedUser.value = user;
     showUserProfile.value = true;
+    fetchUserRoles(user.uuid)
 };
 
 const userPrivateMessagesRedirect = (user) => {
@@ -580,6 +616,10 @@ onUnmounted(() => {
                     class="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg">
                     Supprimer le serveur
                 </button>
+                <button v-if="owner" @click="redirectManageGuildRoles"
+                    class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg">
+                    Modifier les rôles
+                </button>
                 <ul>
                     <li v-for="user in users_in_guild" :key="user.uuid"
                         class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700 cursor-pointer"
@@ -623,15 +663,21 @@ onUnmounted(() => {
 
             <!-- Rôles placeholder à récup si on fait des roles -->
             <div class="flex flex-wrap justify-center gap-2 mb-4">
-                <span class="px-2 py-1 bg-yellow-600 rounded-full text-xs">Admin</span>
-                <span class="px-2 py-1 bg-red-600 rounded-full text-xs">Scalistes</span>
-                <span class="px-2 py-1 bg-blue-600 rounded-full text-xs">KC BLUE BLUE</span>
+                <span v-for="role in userRoles" :key="role[0]" class="px-2 py-1 bg-purple-600 rounded-full text-xs">
+                    {{ role[1] }}
+                </span>
             </div>
 
             <!-- Bouton MP -->
             <button class="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
                 @click="userPrivateMessagesRedirect(selectedUser)">
                 Envoyer un message privé
+            </button>
+
+            <!-- Nouveau bouton pour gérer les rôles -->
+            <button class="w-full py-2 mt-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold"
+                @click="manageRolesRedirect(selectedUser)">
+                Gérer les rôles
             </button>
         </div>
     </div>
