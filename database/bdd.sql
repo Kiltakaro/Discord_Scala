@@ -1,6 +1,6 @@
--- DROP DATABASE IF EXISTS scala_discord;
--- CREATE DATABASE scala_discord;
--- USE scala_discord;
+DROP DATABASE IF EXISTS scala_discord;
+CREATE DATABASE scala_discord;
+USE scala_discord;
 -- si on fait ça faudra changer le DATABASE.scala pour remplacer default par scala_discord
 
 CREATE TABLE IF NOT EXISTS User (
@@ -60,26 +60,11 @@ CREATE TABLE IF NOT EXISTS User_Guild (
 ) ENGINE = MergeTree
 ORDER BY user_id;
 
--- CREATE TABLE IF NOT EXISTS Guild_Invites (
---     invite_code String,
---     guild_id UUID,
---     creator_id UUID,
---     max_uses UInt8, -- 0 = Usage illimité
---     uses UInt8 DEFAULT 0, -- Compteur d'utilisation
---     expires_at DateTime DEFAULT (now() + INTERVAL 1 HOUR)
--- ) ENGINE = MergeTree
--- ORDER BY invite_code;
 
 CREATE TABLE IF NOT EXISTS Guild_Ban (
     user_id UUID,
     guild_id UUID
 ) ENGINE = MergeTree
-ORDER BY user_id;
-
-CREATE TABLE IF NOT EXISTS User_DM_Channel (
-    user_id UUID,
-    dm_channel_id UUID
-) ENGINE MergeTree
 ORDER BY user_id;
 
 CREATE TABLE IF NOT EXISTS Role (

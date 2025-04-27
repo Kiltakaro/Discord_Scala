@@ -1,102 +1,108 @@
 <template>
-    <div class="p-6 max-w-3xl mx-auto bg-gray-800 text-white rounded-xl shadow-md">
-        <h2 class="text-2xl font-bold mb-6 text-center">Manage Server Roles</h2>
+    <div class="min-h-screen bg-gray-900 text-white p-6">
+        <div class="p-6 max-w-3xl mx-auto bg-gray-800 text-white rounded-xl shadow-md">
+            <h2 class="text-2xl font-bold mb-6 text-center">Gerer les roles du serveur</h2>
 
-        <div class="flex justify-end mb-4">
-            <button @click="showAddRoleForm = true"
-                class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold">
-                Ajouter un rôle
-            </button>
-        </div>
-
-        <div v-if="loading" class="text-center text-gray-400">Loading roles...</div>
-
-        <div v-else-if="error" class="text-center text-red-400">{{ error }}</div>
-
-        <div v-else>
-            <div v-if="roles.length > 0">
-                <ul class="space-y-2">
-                    <li v-for="role in roles" :key="role.role_id"
-                        class="bg-gray-700 p-4 rounded-lg flex justify-between items-center">
-                        <div>
-                            <p class="font-semibold">{{ role[1] }}</p>
-                            <p class="text-sm text-gray-400">Priority: {{ role[2] }}</p>
-                        </div>
-                        <div class="flex space-x-2">
-                            <button @click="startEditing(role)"
-                                class="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 rounded-lg text-black font-semibold">
-                                Edit
-                            </button>
-                            <button @click="openPermissionsEditor(role)"
-                                class="px-3 py-1 bg-indigo-500 hover:bg-indigo-600 rounded-lg font-semibold">
-                                Permissions
-                            </button>
-                            <button @click="deleteRole(role[0])"
-                                class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-lg font-semibold">
-                                Delete
-                            </button>
-                        </div>
-                    </li>
-                </ul>
-            </div>
-            <div v-else class="text-center text-gray-400">
-                No roles found.
-            </div>
-        </div>
-
-        <!-- Add role form -->
-        <div v-if="showAddRoleForm" class="mt-8">
-            <h3 class="text-xl font-bold mb-4 text-center">Add New Role</h3>
-            <div class="space-y-4">
-                <input v-model="newRoleName" type="text" placeholder="Role name"
-                    class="w-full p-2 rounded-lg bg-gray-700 text-white" />
-                <input v-model.number="newRolePriority" type="number" placeholder="Priority"
-                    class="w-full p-2 rounded-lg bg-gray-700 text-white" />
-                <div class="flex justify-center">
-                    <button @click="addRole" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold">
-                        Ajouter
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Edit role form -->
-        <div v-if="editingRole" class="mt-8">
-            <h3 class="text-xl font-bold mb-4 text-center">Edit Role</h3>
-            <div class="space-y-4">
-                <input v-model="editRoleName" type="text" class="w-full p-2 rounded-lg bg-gray-700 text-white" />
-                <input v-model.number="editRolePriority" type="number"
-                    class="w-full p-2 rounded-lg bg-gray-700 text-white" />
-                <div class="flex justify-center space-x-4">
-                    <button @click="updateRole"
-                        class="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 rounded-lg text-black font-semibold">
-                        Save
-                    </button>
-                    <button @click="cancelEditing"
-                        class="px-6 py-2 bg-gray-500 hover:bg-gray-600 rounded-lg font-semibold">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Manage permissions form-->
-        <div v-if="managingPermissionsRole" class="mt-8">
-            <h3 class="text-xl font-bold mb-4 text-center">Manage Permissions for {{ managingPermissionsRole[1] }}</h3>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div v-for="permission in allPermissions" :key="permission" class="flex items-center space-x-2">
-                    <input type="checkbox" :id="permission" :checked="rolePermissions.includes(permission)"
-                        @change="togglePermission(managingPermissionsRole[0], permission)" class="accent-green-500" />
-                    <label :for="permission" class="capitalize">{{ permission.replace('_', ' ') }}</label>
-                </div>
-            </div>
-
-            <div class="flex justify-center mt-6">
-                <button @click="closePermissionsEditor"
-                    class="px-6 py-2 bg-gray-500 hover:bg-gray-600 rounded-lg font-semibold">
-                    Close
+            <div class="flex justify-end mb-4">
+                <button @click="showAddRoleForm = true"
+                    class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold">
+                    Ajouter un rôle
                 </button>
+            </div>
+
+            <div v-if="loading" class="text-center text-gray-400">Chargement des roles...</div>
+
+            <div v-else-if="error" class="text-center text-red-400">{{ error }}</div>
+
+            <div v-else>
+                <div v-if="roles.length > 0">
+                    <ul class="space-y-2">
+                        <li v-for="role in roles" :key="role.role_id"
+                            class="bg-gray-700 p-4 rounded-lg flex justify-between items-center">
+                            <div>
+                                <p class="font-semibold">{{ role[1] }}</p>
+                                <p class="text-sm text-gray-400">Priorité du role : {{ role[2] }}</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button @click="startEditing(role)"
+                                    class="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 rounded-lg text-black font-semibold">
+                                    Modifier
+                                </button>
+                                <button @click="openPermissionsEditor(role)"
+                                    class="px-3 py-1 bg-indigo-500 hover:bg-indigo-600 rounded-lg font-semibold">
+                                    Permissions
+                                </button>
+                                <button @click="deleteRole(role[0])"
+                                    class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-lg font-semibold">
+                                    Supprimer
+                                </button>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <div v-else class="text-center text-gray-400">
+                    Aucun role trouvé
+                </div>
+            </div>
+
+            <!-- Add role form -->
+            <div v-if="showAddRoleForm" class="mt-8">
+                <h3 class="text-xl font-bold mb-4 text-center">Ajouter un nouveau role</h3>
+                <div class="space-y-4">
+                    <input v-model="newRoleName" type="text" placeholder="Role name"
+                        class="w-full p-2 rounded-lg bg-gray-700 text-white" />
+                    <h3> Priorité du role </h3>
+                    <input v-model.number="newRolePriority" type="number" placeholder="Priority"
+                        class="w-full p-2 rounded-lg bg-gray-700 text-white" />
+                    <div class="flex justify-center">
+                        <button @click="addRole"
+                            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold">
+                            Ajouter
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit role form -->
+            <div v-if="editingRole" class="mt-8">
+                <h3 class="text-xl font-bold mb-4 text-center">Modifier Role</h3>
+                <div class="space-y-4">
+                    <input v-model="editRoleName" type="text" class="w-full p-2 rounded-lg bg-gray-700 text-white" />
+                    <input v-model.number="editRolePriority" type="number"
+                        class="w-full p-2 rounded-lg bg-gray-700 text-white" />
+                    <div class="flex justify-center space-x-4">
+                        <button @click="updateRole"
+                            class="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 rounded-lg text-black font-semibold">
+                            Sauvegarder
+                        </button>
+                        <button @click="cancelEditing"
+                            class="px-6 py-2 bg-gray-500 hover:bg-gray-600 rounded-lg font-semibold">
+                            Annuler
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manage permissions form-->
+            <div v-if="managingPermissionsRole" class="mt-8">
+                <h3 class="text-xl font-bold mb-4 text-center">Gerer les permission pour {{ managingPermissionsRole[1] }}
+                </h3>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div v-for="permission in allPermissions" :key="permission" class="flex items-center space-x-2">
+                        <input type="checkbox" :id="permission" :checked="rolePermissions.includes(permission)"
+                            @change="togglePermission(managingPermissionsRole[0], permission)"
+                            class="accent-green-500" />
+                        <label :for="permission" class="capitalize">{{ permission.replace('_', ' ') }}</label>
+                    </div>
+                </div>
+
+                <div class="flex justify-center mt-6">
+                    <button @click="closePermissionsEditor"
+                        class="px-6 py-2 bg-gray-500 hover:bg-gray-600 rounded-lg font-semibold">
+                        Fermer
+                    </button>
+                </div>
             </div>
         </div>
     </div>

@@ -1,44 +1,46 @@
 <template>
-    <div class="p-6 max-w-2xl mx-auto bg-gray-800 text-white rounded-xl shadow-md">
-        <h2 class="text-2xl font-bold mb-6 text-center">Manage Roles for {{ username || 'Loading...' }}</h2>
+    <div class="min-h-screen flex flex-col items-center bg-gray-900 text-white p-6">
+        <h2 class="text-2xl font-bold mb-6 text-center">Gerer les roles de l'utilisateur {{ username || 'Chargement...'
+            }}</h2>
 
-        <div v-if="loading" class="text-center text-gray-400">Loading roles...</div>
+        <div v-if="loading" class="text-center text-gray-400">Chargement des roles...</div>
 
         <div v-else-if="error" class="text-center text-red-400">{{ error }}</div>
 
         <div v-else>
             <!-- Current roles -->
             <div class="mb-8">
-                <h3 class="text-xl font-semibold mb-4">Current Roles:</h3>
+                <h3 class="text-xl font-semibold mb-4">Roles de l'utilisateur :</h3>
                 <ul class="space-y-2">
                     <li v-for="role in assignedRoles" :key="role[0]"
                         class="flex justify-between items-center bg-gray-700 p-2 rounded-lg">
                         <span>{{ role[1] }} (priority: {{ role[2] }})</span>
                         <button @click="removeRole(role[0])"
                             class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-lg font-semibold">
-                            Remove
+                            Enlever
                         </button>
                     </li>
                 </ul>
-                <div v-if="assignedRoles.length === 0" class="text-center text-gray-400 mt-4">No roles assigned yet.
+                <div v-if="assignedRoles.length === 0" class="text-center text-gray-400 mt-4">Aucun role donné
                 </div>
             </div>
 
             <!-- Available roles -->
             <div>
-                <h3 class="text-xl font-semibold mb-4">Available Roles to Add:</h3>
+                <h3 class="text-xl font-semibold mb-4">Roles à donner à l'utilisateur</h3>
                 <ul class="space-y-2">
                     <li v-for="role in availableRoles" :key="role[0]"
                         class="flex justify-between items-center bg-gray-700 p-2 rounded-lg">
                         <span>{{ role[1] }} (priority: {{ role[2] }})</span>
                         <button @click="addRole(role[0])"
                             class="px-3 py-1 bg-green-600 hover:bg-green-700 rounded-lg font-semibold">
-                            Add
+                            Ajouter
                         </button>
                     </li>
                 </ul>
-                <div v-if="availableRoles.length === 0" class="text-center text-gray-400 mt-4">No available roles to
-                    add.</div>
+                <div v-if="availableRoles.length === 0" class="text-center text-gray-400 mt-4">Aucun role à donner à
+                    l'utilisateur
+                </div>
             </div>
         </div>
     </div>
