@@ -66,7 +66,7 @@ const fetchWithAuth = async (url, options = {}) => {
 
 // Helper pour éviter beaucoup de répétition de code dans la template
 const can = (permission) => {
-  return owner.value || userPermissions.value.includes('administrator') || userPermissions.value.includes(permission)
+    return owner.value || userPermissions.value.includes('administrator') || userPermissions.value.includes(permission)
 }
 
 const fetchUserPermissions = async () => {
@@ -572,7 +572,8 @@ onUnmounted(() => {
                     </h1>
 
                     <template v-if="can('invite_users')">
-                        <input v-model="username" @input="searchUsers" type="text" placeholder="Inviter un utilisateur..."
+                        <input v-model="username" @input="searchUsers" type="text"
+                            placeholder="Inviter un utilisateur..."
                             class="px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
 
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 w-full max-w-4xl">
@@ -661,11 +662,11 @@ onUnmounted(() => {
                     class="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg">
                     Supprimer le serveur
                 </button>
-                <button v-if="owner" @click="redirectManageGuildRoles"
+                <button v-if="can('manage_guild')" @click="redirectManageGuildRoles"
                     class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg">
                     Modifier les rôles
                 </button>
-                <button v-if="owner"
+                <button v-if="can('manage_guild')"
                     class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg"
                     @click="banListRedirect(guildId)">
                     Utilisateurs bannis
@@ -719,7 +720,8 @@ onUnmounted(() => {
             </button>
 
             <!-- Nouveau bouton pour gérer les rôles -->
-            <button class="w-full py-2 mt-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold"
+            <button v-if="can('manage_guild')"
+                class="w-full py-2 mt-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold"
                 @click="manageRolesRedirect(selectedUser)">
                 Gérer les rôles
             </button>

@@ -195,20 +195,14 @@ object Friend {
                         BadRequest("Token not found")
                 }
 
-
-            // AJOUTER DE QUOI SUPPRIMER UN AMI DANS LE FRONT
-            // suuprime un ami revient a refuser sa requete donc on pourrait appeler decline dans le front mais c'est moins "stylé"
-            case r @ DELETE -> Root =>
+            case r @ DELETE -> Root / UUIDVar(friendId) =>
                 r.headers.get(ci"Authorization") match {
                     case Some(header) =>
                         val token = header.head.value.stripPrefix("Bearer ")
                         val userIdFromToken = Authentification.decodeToken(token)
-                        r.as[Json].flatMap { json =>
-                            val friendId = json.hcursor.get[String]("friend_id").getOrElse("")
-                            declineFriendRequest(UUID.fromString(userIdFromToken), UUID.fromString(friendId), xa).flatMap { result =>
-                                Ok(s"Rows affected: $result")
-                            }
-                        }
+                        declineFriendRequest(UUID.fromString(userIdFromToken), friendId, xa).flatMap { result =>
+                            Ok(s"Rows affected: $result")
+                    }
                     case None =>
                         BadRequest("Token not found")
                 }

@@ -8,7 +8,7 @@ const errorMessage = ref("");
 const router = useRouter();
 
 if (!token) {
-  router.push("/login");
+    router.push("/login");
 }
 
 const fetchFriends = async () => {
@@ -34,6 +34,30 @@ const fetchFriends = async () => {
     }
 };
 
+const deleteFriend = async (friendId) => {
+    const confirmation = confirm("Êtes-vous sûr de vouloir supprimer cet ami ?");
+    if (!confirmation) return;
+
+    try {
+        const response = await fetch(`http://localhost:8080/friends/${friendId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+        });
+
+        if (response.ok) {
+            // Refresh the friends list
+            await fetchFriends();
+        } else {
+            errorMessage.value = "Erreur lors de la suppression de l'ami.";
+        }
+    } catch (error) {
+        errorMessage.value = "Erreur lors de la suppression de l'ami : " + error;
+    }
+};
+
 const userPrivateMessagesRedirect = (user) => {
     router.push(`/friends/${user.user_id}`);
 };
@@ -54,18 +78,26 @@ onMounted(() => {
         <div class="w-full max-w-lg mb-8">
             <h2 class="text-xl font-semibold mb-4 text-gray-300 text-center">Messages Privés</h2>
             <div class="flex flex-wrap justify-center gap-6">
-                <button v-for="friend in friends" :key="friend.user_id" @click="userPrivateMessagesRedirect(friend)"
-                    class="flex flex-col items-center focus:outline-none">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/9/95/Vue.js_Logo_2.svg" alt="Vue.js Logo"
-                        class="h-16 w-16 rounded-full object-cover bg-white p-2" />
-                    <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ friend.username }}</span>
-                </button>
+                <div v-for="friend in friends" :key="friend.user_id" class="flex flex-col items-center space-y-2">
+                    <button @click="userPrivateMessagesRedirect(friend)"
+                        class="flex flex-col items-center focus:outline-none">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/9/95/Vue.js_Logo_2.svg" alt="Avatar"
+                            class="h-16 w-16 rounded-full object-cover bg-white p-2" />
+                        <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ friend.username
+                            }}</span>
+                    </button>
+
+                    <button @click="deleteFriend(friend.user_id)"
+                        class="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-lg">
+                        Retirer
+                    </button>
+                </div>
             </div>
         </div>
 
         <router-link to="/searchfriend" class="hover:text-blue-400 font-bold transition">
             <button class="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg">Ajouter des
-                amis</button> 
+                amis</button>
         </router-link>
 
     </div>
