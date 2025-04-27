@@ -43,6 +43,16 @@ Ou alors à la main :
    ```
 5. ```kafka_2.13-3.9.0/bin/kafka-server-start.sh kafka_2.13-3.9.0/config/kraft/server.properties```
 
+## Utilisation de l'application
+
+- L'utilisateur peut s'inscrire, faire une demande d'amis.  
+- L'autre utilisateur peut accepter sa demande d'amis.  
+- Les utilisateurs peuvent s'envoyer des messages en privé.  
+- Les utilisateurs peuvent créer des serveurs et y inviter des gens.  
+- Il est possible de créer des channels pour envoyer des messages dans un serveur. (autrement il sera impossible d'envoyer des messages)
+- L'admin peut CLIC DROIT pour expluser / bannir des utilisateurs.  
+- Les utilisateurs d'un serveur peuvent recevoir des roles qui changeant leurs droits.  
+
 
 # Auteurs
 Kat'Orz  
