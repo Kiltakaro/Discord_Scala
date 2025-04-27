@@ -51,6 +51,7 @@ function manageRolesRedirect(user) {
     router.push(`/server/${guildId.value}/manage-roles/${user.uuid}`);
 }
 
+// Helper pour encapsuler la vérif d'authentification
 const fetchWithAuth = async (url, options = {}) => {
     const token = localStorage.getItem('token')
     return fetch(`http://localhost:8080${url}`, {
@@ -63,9 +64,9 @@ const fetchWithAuth = async (url, options = {}) => {
     })
 }
 
-// Helper pour éviter de saturer la template
+// Helper pour éviter beaucoup de répétition de code dans la template
 const can = (permission) => {
-    return owner.value || userPermissions.value.includes(permission)
+  return owner.value || userPermissions.value.includes('administrator') || userPermissions.value.includes(permission)
 }
 
 const fetchUserPermissions = async () => {
@@ -82,7 +83,7 @@ const fetchUserPermissions = async () => {
     }
 }
 
-// Gère dynamiquement quelles options du menu à afficher
+// Gère dynamiquement quelles options du menu sont à afficher
 const buildContextMenuActions = () => {
     const actions = []
     if (can('kick_members')) {
@@ -564,28 +565,40 @@ onUnmounted(() => {
 
             <!-- Ajouter des utilisateurs (Réservé a l'admin du serveur) -->
             <!-- Si pas de channel choisi ou 0 message dans les channels, l'admin est 'invité' à ajouter des utilisateurs -->
-            <div v-if="messages.length === 0 && owner" class="flex justify-center items-center">
+            <div class="flex justify-center items-center">
                 <div class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white space-y-4">
-                    <h1 class="text-4xl font-bold text-center">Il n'y a aucun message ici ! Changez de channel ou
-                        invitez des gens sur le serveur</h1>
-                    <input v-model="username" @input="searchUsers" type="text" placeholder="Ajoutez quelqu'un"
-                        class="px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <h1 class="text-4xl font-bold text-center">
+                        Il n'y a aucun message ici ! Changez de channel ou invitez des gens sur le serveur
+                    </h1>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 w-full max-w-4xl">
-                        <div v-for="user in users" :key="user.uuid"
-                            class="bg-gray-800 p-6 rounded-lg shadow-md flex justify-between items-center">
-                            <span class="text-xl font-bold">{{ user.username }}</span>
-                            <button @click="inviteUserToGuild(user.uuid)"
-                                class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
-                                Ajouter
-                            </button>
+                    <template v-if="can('invite_users')">
+                        <input v-model="username" @input="searchUsers" type="text" placeholder="Inviter un utilisateur..."
+                            class="px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 w-full max-w-4xl">
+                            <div v-for="user in users" :key="user.uuid"
+                                class="bg-gray-800 p-6 rounded-lg shadow-md flex justify-between items-center">
+                                <span class="text-xl font-bold">{{ user.username }}</span>
+                                <button @click="inviteUserToGuild(user.uuid)"
+                                    class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
+                                    Ajouter
+                                </button>
+                            </div>
+
+                            <div v-if="users.length === 0" class="text-gray-400 text-center p-2 col-span-full">
+                                Aucun utilisateur trouvé
+                            </div>
                         </div>
-                        <div v-if="users.length === 0" class="text-gray-400 text-center p-2 col-span-full">Aucun
-                            utilisateur
-                            trouvé</div>
-                    </div>
+                    </template>
+
+                    <template v-else>
+                        <p class="text-gray-400 text-center mt-4">
+                            Vous n'avez pas la permission d'inviter des utilisateurs sur ce serveur.
+                        </p>
+                    </template>
                 </div>
             </div>
+
 
             <!-- Affichage des messages -->
             <!-- A FIX L'AFFICHAGE DES MSG EST UN PEU RANDOM jusqu'a ce qu'on relance le serv  -->
@@ -627,11 +640,12 @@ onUnmounted(() => {
             </div>
 
             <!-- textbox pour ecire des messages -->
-            <div class="fixed bottom-0 left-64 right-64 bg-gray-800 p-4 border-t-4 border-gray-700">
+            <div v-if="can('send_messages')"
+                class="fixed bottom-0 left-64 right-64 bg-gray-800 p-4 border-t-4 border-gray-700">
                 <div class="flex items-center space-x-4">
                     <textarea v-model="newMessage" placeholder="Écrire un message"
                         class="flex-1 p-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                    <!-- A FIX le rendre disponible QUE SI CHANNEL NON NULL + MESSAGE NON NULL -->
+
                     <button @click="sendMessage"
                         class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
                         Envoyer
