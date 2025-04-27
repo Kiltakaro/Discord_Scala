@@ -16,11 +16,10 @@ Discord en scala
 2. ```curl https://clickhouse.com/ | sh```
 3. ./clickhouse
 4. ```install clickhouse```
-5. Verifier si clickhouse fonctionne correctement
-6. ```clickhouse-server```
-7. CTRL + C    (stopper le processus, si ça a fonctionné, fournir la base de données a clickhouse)
-8. ```clickhouse client < bdd.sql```
-9. ```clickhouse-server```
+5. ```clickhouse-server``` (Verifier si clickhouse fonctionne correctement)
+6. CTRL + C    (stopper le processus, si ça a fonctionné, fournir la base de données a clickhouse)
+7. ```clickhouse client < bdd.sql```
+8. ```clickhouse-server```
 
 Source : https://clickhouse.com/docs/install
 
