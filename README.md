@@ -17,9 +17,9 @@ Discord en scala
 3. ./clickhouse
 4. ```install clickhouse```
 5. ```clickhouse-server``` (Verifier si clickhouse fonctionne correctement)
-6. CTRL + C    (stopper le processus, si ça a fonctionné, fournir la base de données a clickhouse)
-7. ```clickhouse client < bdd.sql```
-8. ```clickhouse-server```
+6. Si ça a fonctionné, on fournit la base de données a clickhouse
+7. Ouvrir une autre fenetre dans le dossier database
+8. ```clickhouse client < bdd.sql```
 
 Source : https://clickhouse.com/docs/install
 
