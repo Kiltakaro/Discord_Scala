@@ -56,7 +56,8 @@ onMounted(() => {
             <div class="flex flex-wrap justify-center gap-6">
                 <button v-for="friend in friends" :key="friend.user_id" @click="userPrivateMessagesRedirect(friend)"
                     class="flex flex-col items-center focus:outline-none">
-                    <IconMessage class="w-16 h-16 rounded-full border-2 border-gray-700 hover:border-white transition" />
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/9/95/Vue.js_Logo_2.svg" alt="Vue.js Logo"
+                        class="h-16 w-16 rounded-full object-cover bg-white p-2" />
                     <span class="mt-2 text-sm text-gray-300 max-w-[80px] truncate text-center">{{ friend.username }}</span>
                 </button>
             </div>

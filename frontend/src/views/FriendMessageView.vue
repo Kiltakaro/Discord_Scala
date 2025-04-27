@@ -89,9 +89,16 @@ const getChannelFromFriendship = async () => {
         if (response.status === 404) {
             await createChannel();
             return;
-        }
+        } 
 
         const data = await response.json();
+
+        // si y'a pas de channel dm faut en créer data = null mais pas d'erreur
+        if (data === null || data === undefined) {
+            await createChannel();
+            return;
+        }
+
         actualChannel.value = data.channelId;
 
     } catch (error) {
@@ -235,7 +242,6 @@ onUnmounted(() => {
             <div class="flex items-center space-x-4">
                 <textarea v-model="newMessage" placeholder="Écrire un message"
                     class="flex-1 p-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                <!-- A FIX le rendre disponible QUE SI CHANNEL NON NULL + MESSAGE NON NULL -->
                 <button @click="sendMessage"
                     class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
                     Envoyer
