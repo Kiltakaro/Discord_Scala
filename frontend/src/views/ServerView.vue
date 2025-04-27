@@ -565,38 +565,40 @@ onUnmounted(() => {
 
             <!-- Ajouter des utilisateurs (Réservé a l'admin du serveur) -->
             <!-- Si pas de channel choisi ou 0 message dans les channels, l'admin est 'invité' à ajouter des utilisateurs -->
+            <div v-if="!actualChannel" class="flex justify-center items-center">
             <div class="flex justify-center items-center">
                 <div class="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white space-y-4">
                     <h1 class="text-4xl font-bold text-center">
                         Il n'y a aucun message ici ! Changez de channel ou invitez des gens sur le serveur
                     </h1>
 
-                    <template v-if="can('invite_users')">
-                        <input v-model="username" @input="searchUsers" type="text"
-                            placeholder="Inviter un utilisateur..."
-                            class="px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        <template v-if="can('invite_users')">
+                            <input v-model="username" @input="searchUsers" type="text"
+                                placeholder="Inviter un utilisateur..."
+                                class="px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 w-full max-w-4xl">
-                            <div v-for="user in users" :key="user.uuid"
-                                class="bg-gray-800 p-6 rounded-lg shadow-md flex justify-between items-center">
-                                <span class="text-xl font-bold">{{ user.username }}</span>
-                                <button @click="inviteUserToGuild(user.uuid)"
-                                    class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
-                                    Ajouter
-                                </button>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 w-full max-w-4xl">
+                                <div v-for="user in users" :key="user.uuid"
+                                    class="bg-gray-800 p-6 rounded-lg shadow-md flex justify-between items-center">
+                                    <span class="text-xl font-bold">{{ user.username }}</span>
+                                    <button @click="inviteUserToGuild(user.uuid)"
+                                        class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg">
+                                        Ajouter
+                                    </button>
+                                </div>
+
+                                <div v-if="users.length === 0" class="text-gray-400 text-center p-2 col-span-full">
+                                    Aucun utilisateur trouvé
+                                </div>
                             </div>
+                        </template>
 
-                            <div v-if="users.length === 0" class="text-gray-400 text-center p-2 col-span-full">
-                                Aucun utilisateur trouvé
-                            </div>
-                        </div>
-                    </template>
-
-                    <template v-else>
-                        <p class="text-gray-400 text-center mt-4">
-                            Vous n'avez pas la permission d'inviter des utilisateurs sur ce serveur.
-                        </p>
-                    </template>
+                        <template v-else>
+                            <p class="text-gray-400 text-center mt-4">
+                                Vous n'avez pas la permission d'inviter des utilisateurs sur ce serveur.
+                            </p>
+                        </template>
+                    </div>
                 </div>
             </div>
 
