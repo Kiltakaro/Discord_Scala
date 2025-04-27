@@ -50,6 +50,7 @@ Ou alors à la main :
 - Les utilisateurs peuvent s'envoyer des messages en privé.  
 - Les utilisateurs peuvent créer des serveurs et y inviter des gens.  
 - Il est possible de créer des channels pour envoyer des messages dans un serveur. (autrement il sera impossible d'envoyer des messages)
+- Les utilisateurs peuvent envoyer des messages que si ils ont les droits (du role correspondant)
 - L'admin peut CLIC DROIT pour expluser / bannir des utilisateurs.  
 - Les utilisateurs d'un serveur peuvent recevoir des roles qui changeant leurs droits.  
 
