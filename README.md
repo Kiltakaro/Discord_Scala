@@ -37,9 +37,11 @@ Ou alors à la main :
 1. ```cd backend && sbt run```
 2. ```cd frontend && npm run dev```
 3. ```cd database && clickhouse-server``` ou ```cd database && ./clickhouse-server```
-4. ```kafka_2.13-3.9.0/bin/kafka-storage.sh format \
+4. ```
+   kafka_2.13-3.9.0/bin/kafka-storage.sh format \
     --config kafka_2.13-3.9.0/config/kraft/server.properties \
-    --cluster-id $(kafka_2.13-3.9.0/bin/kafka-storage.sh random-uuid)```
+    --cluster-id $(kafka_2.13-3.9.0/bin/kafka-storage.sh random-uuid)
+   ```
 5. ```kafka_2.13-3.9.0/bin/kafka-server-start.sh kafka_2.13-3.9.0/config/kraft/server.properties```
 
 
