@@ -6,4 +6,6 @@ object Permissions {
     val INVITE_USERS = "invite_users"
     val KICK_MEMBERS = "kick_members"
     val BAN_MEMBERS = "ban_members"
+    val SHOW_CHANNEL = "show_channel"
+    val ADMINISTRATOR = "administrator"
 }

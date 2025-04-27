@@ -134,12 +134,14 @@ const allPermissions = [
     "manage_channels",
     "invite_users",
     "kick_members",
-    "ban_members"
+    "ban_members",
+    "administrator"
 ]
 
 const managingPermissionsRole = ref(null)
 const rolePermissions = ref([])
 
+// Helper pour encapsuler la vérif d'authentification
 const fetchWithAuth = async (url, options = {}) => {
     const token = localStorage.getItem('token')
     return fetch(`http://localhost:8080${url}`, {

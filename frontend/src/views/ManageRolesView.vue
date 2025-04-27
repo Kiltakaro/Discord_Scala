@@ -8,7 +8,7 @@
         <div v-else-if="error" class="text-center text-red-400">{{ error }}</div>
 
         <div v-else>
-            <!-- Current roles -->
+            <!-- Roles du user -->
             <div class="mb-8">
                 <h3 class="text-xl font-semibold mb-4">Roles de l'utilisateur :</h3>
                 <ul class="space-y-2">
@@ -25,7 +25,7 @@
                 </div>
             </div>
 
-            <!-- Available roles -->
+            <!-- Autres assignables -->
             <div>
                 <h3 class="text-xl font-semibold mb-4">Roles à donner à l'utilisateur</h3>
                 <ul class="space-y-2">
@@ -62,6 +62,7 @@ const username = ref('')
 const loading = ref(true)
 const error = ref('')
 
+// Helper pour encapsuler la vérif d'authentification
 const fetchWithAuth = async (url, options = {}) => {
     const token = localStorage.getItem('token')
     return fetch(`http://localhost:8080${url}`, {
@@ -91,7 +92,7 @@ const fetchRoles = async () => {
         if (!resAll.ok) throw new Error('Failed to fetch all roles')
         allRoles.value = await resAll.json()
 
-        // Filter available roles (roles not already assigned)
+        // Filtrer les rôles non assignés
         availableRoles.value = allRoles.value.filter(role =>
             !assignedRoles.value.some(ar => ar[0] === role[0])
         )
