@@ -24,6 +24,7 @@ case class RoleAssignment(userId: UUID, guildId: UUID, roleId: UUID)
 
 object Role {
 
+    // Roles themselves
     def createRole(input: RoleInput, xa: Transactor[IO]): IO[Int] = {
         val newRoleId = UUID.randomUUID()
         sql"""
@@ -36,20 +37,6 @@ object Role {
         sql"""
             INSERT INTO User_Role (user_id, guild_id, role_id)
             VALUES (${assignment.userId}, ${assignment.guildId}, ${assignment.roleId})
-        """.update.run.transact(xa)
-    }
-
-    def assignPermission(input: PermissionInput, xa: Transactor[IO]): IO[Int] = {
-        sql"""
-            INSERT INTO Role_Permission (role_id, permission_name)
-            VALUES (${input.roleId}, ${input.permission})
-        """.update.run.transact(xa)
-    }
-
-    def removePermission(input: PermissionInput, xa: Transactor[IO]): IO[Int] = {
-        sql"""
-            DELETE FROM Role_Permission
-            WHERE role_id = ${input.roleId} AND permission_name = ${input.permission}
         """.update.run.transact(xa)
     }
 
@@ -76,14 +63,6 @@ object Role {
         """.update.run.transact(xa)
     }
 
-    def getUserPermissions(userId: UUID, guildId: UUID, xa: Transactor[IO]): IO[Set[String]] = {
-        sql"""
-            SELECT DISTINCT permission_name FROM Role_Permission
-            JOIN User_Role ON Role_Permission.role_id = User_Role.role_id
-            WHERE User_Role.user_id = $userId AND User_Role.guild_id = $guildId
-        """.query[String].to[Set].transact(xa)
-    }
-
     def getRolesInGuild(guildId: UUID, xa: Transactor[IO]): IO[List[(UUID, String, Int)]] = {
         sql"""
             SELECT role_id, role_name, priority FROM Role
@@ -100,9 +79,46 @@ object Role {
         """.query[(UUID, String, Int)].to[List].transact(xa)
     }
 
+    // Role permissions
+    def assignPermission(input: PermissionInput, xa: Transactor[IO]): IO[Int] = {
+        sql"""
+            INSERT INTO Role_Permission (role_id, permission_name)
+            VALUES (${input.roleId}, ${input.permission})
+        """.update.run.transact(xa)
+    }
+
+    def removePermission(input: PermissionInput, xa: Transactor[IO]): IO[Int] = {
+        sql"""
+            DELETE FROM Role_Permission
+            WHERE role_id = ${input.roleId} AND permission_name = ${input.permission}
+        """.update.run.transact(xa)
+    }
+
+    def getUserPermissions(userId: UUID, guildId: UUID, xa: Transactor[IO]): IO[Set[String]] = {
+        sql"""
+            SELECT DISTINCT permission_name FROM Role_Permission
+            JOIN User_Role ON Role_Permission.role_id = User_Role.role_id
+            WHERE User_Role.user_id = $userId AND User_Role.guild_id = $guildId
+        """.query[String].to[Set].transact(xa)
+    }
+
+    def getPermissionsOfRole(roleId: UUID, xa: Transactor[IO]): IO[List[String]] = {
+        sql"""
+            SELECT permission_name FROM Role_Permission
+            WHERE role_id = $roleId
+        """.query[String].to[List].transact(xa)
+    }
+
+
+    def hasPermission(userId: UUID, guildId: UUID, requiredPermission: String, xa: Transactor[IO]): IO[Boolean] = {
+        getUserPermissions(userId, guildId, xa).map { permissions =>
+            permissions.contains(requiredPermission)
+        }
+    }
 
     def roleRoutes(xa: Transactor[IO]) = HttpRoutes.of[IO] {
-
+    
+    // User permissions
     case req @ GET -> Root / "permissions" / UUIDVar(guildId) =>
         req.headers.get(ci"Authorization") match {
             case Some(header) =>
@@ -121,7 +137,11 @@ object Role {
     case GET -> Root / "assigned" / UUIDVar(userId) / UUIDVar(guildId) =>
         getRolesAssignedToUser(userId, guildId, xa).flatMap(roles => Ok(roles.asJson))
 
-
+    // Role permissions
+    case GET -> Root / "role-permissions" / UUIDVar(roleId) =>
+        getPermissionsOfRole(roleId, xa).flatMap { permissions =>
+            Ok(permissions.asJson)
+        }
 
     case req @ POST -> Root / "create" =>
       req.as[RoleInput].flatMap { input =>

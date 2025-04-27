@@ -27,6 +27,10 @@
                                 class="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 rounded-lg text-black font-semibold">
                                 Edit
                             </button>
+                            <button @click="openPermissionsEditor(role)"
+                                class="px-3 py-1 bg-indigo-500 hover:bg-indigo-600 rounded-lg font-semibold">
+                                Permissions
+                            </button>
                             <button @click="deleteRole(role[0])"
                                 class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-lg font-semibold">
                                 Delete
@@ -40,7 +44,7 @@
             </div>
         </div>
 
-        <!-- Add Role Form -->
+        <!-- Add role form -->
         <div v-if="showAddRoleForm" class="mt-8">
             <h3 class="text-xl font-bold mb-4 text-center">Add New Role</h3>
             <div class="space-y-4">
@@ -56,7 +60,7 @@
             </div>
         </div>
 
-        <!-- Edit Role Form -->
+        <!-- Edit role form -->
         <div v-if="editingRole" class="mt-8">
             <h3 class="text-xl font-bold mb-4 text-center">Edit Role</h3>
             <div class="space-y-4">
@@ -73,6 +77,26 @@
                         Cancel
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Manage permissions form-->
+        <div v-if="managingPermissionsRole" class="mt-8">
+            <h3 class="text-xl font-bold mb-4 text-center">Manage Permissions for {{ managingPermissionsRole[1] }}</h3>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div v-for="permission in allPermissions" :key="permission" class="flex items-center space-x-2">
+                    <input type="checkbox" :id="permission" :checked="rolePermissions.includes(permission)"
+                        @change="togglePermission(managingPermissionsRole[0], permission)" class="accent-green-500" />
+                    <label :for="permission" class="capitalize">{{ permission.replace('_', ' ') }}</label>
+                </div>
+            </div>
+
+            <div class="flex justify-center mt-6">
+                <button @click="closePermissionsEditor"
+                    class="px-6 py-2 bg-gray-500 hover:bg-gray-600 rounded-lg font-semibold">
+                    Close
+                </button>
             </div>
         </div>
     </div>
@@ -97,6 +121,19 @@ const editingRole = ref(null)
 const editRoleName = ref('')
 const editRolePriority = ref(1)
 
+const allPermissions = [
+    "send_messages",
+    "delete_messages",
+    "manage_guild",
+    "manage_channels",
+    "invite_users",
+    "kick_members",
+    "ban_members"
+]
+
+const managingPermissionsRole = ref(null)
+const rolePermissions = ref([])
+
 const fetchWithAuth = async (url, options = {}) => {
     const token = localStorage.getItem('token')
     return fetch(`http://localhost:8080${url}`, {
@@ -108,6 +145,49 @@ const fetchWithAuth = async (url, options = {}) => {
         }
     })
 }
+
+const fetchRolePermissions = async (roleId) => {
+    try {
+        const res = await fetchWithAuth(`/roles/role-permissions/${roleId}`)
+        if (res.ok) {
+            rolePermissions.value = await res.json()
+        } else {
+            rolePermissions.value = []
+        }
+    } catch (err) {
+        console.error('Failed to fetch role permissions:', err)
+        rolePermissions.value = []
+    }
+}
+
+const togglePermission = async (roleId, permission) => {
+    try {
+        if (rolePermissions.value.includes(permission)) {
+            await fetchWithAuth('/roles/permissions', {
+                method: 'DELETE',
+                body: JSON.stringify({ roleId, permission })
+            })
+        } else {
+            await fetchWithAuth('/roles/permissions', {
+                method: 'POST',
+                body: JSON.stringify({ roleId, permission })
+            })
+        }
+        await fetchRolePermissions(roleId) // refresh après changement
+    } catch (err) {
+        console.error('Failed to toggle permission:', err)
+    }
+}
+
+const openPermissionsEditor = (role) => {
+    managingPermissionsRole.value = role
+    fetchRolePermissions(role[0])
+}
+
+const closePermissionsEditor = () => {
+    managingPermissionsRole.value = null
+}
+
 
 const fetchRoles = async () => {
     loading.value = true

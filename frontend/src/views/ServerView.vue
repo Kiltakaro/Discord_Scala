@@ -29,7 +29,7 @@ let refreshInterval = ref(null); // Pour le chargement des messages
 
 // Context menu variables
 // ON SE SERT DE ÇA LE + POSSIBLE SI ON PEUT, ÇA ÉVITE DE SPAM LES BOUTONS PARTOUT
-const canManageRoles = ref(false)
+const userPermissions = ref([])
 const showMenuChannel = ref(false);
 const showMenuUser = ref(false);
 const targetChannelId = ref(""); // Utilisé pour déterminer sur quel channel on a fait clic droit
@@ -39,11 +39,8 @@ const menuY = ref(0);
 const contextMenuActionsChannel = ref([
     { label: 'Supprimer', action: 'delete' }
 ]);
+const contextMenuActionsUser = ref([])
 
-const contextMenuActionsUser = ref([
-    { label: 'Expulser', action: 'kick' },
-    { label: 'Bannir', action: 'ban' }
-]);
 
 if (!token) {
     router.push("/login");
@@ -64,6 +61,37 @@ const fetchWithAuth = async (url, options = {}) => {
             ...(options.headers || {})
         }
     })
+}
+
+// Helper pour éviter de saturer la template
+const can = (permission) => {
+    return owner.value || userPermissions.value.includes(permission)
+}
+
+const fetchUserPermissions = async () => {
+    try {
+        const res = await fetchWithAuth(`/roles/permissions/${guildId.value}`)
+        if (res.ok) {
+            userPermissions.value = await res.json()
+        } else {
+            userPermissions.value = []
+        }
+    } catch (err) {
+        console.error('Failed to fetch user permissions:', err)
+        userPermissions.value = []
+    }
+}
+
+// Gère dynamiquement quelles options du menu à afficher
+const buildContextMenuActions = () => {
+    const actions = []
+    if (can('kick_members')) {
+        actions.push({ label: 'Kick', action: 'kick' })
+    }
+    if (can('ban_members')) {
+        actions.push({ label: 'Ban', action: 'ban' })
+    }
+    contextMenuActionsUser.value = actions
 }
 
 const searchUsers = async () => {
@@ -392,7 +420,7 @@ const formatDate = (dateString) => {
 };
 
 const sendMessage = async () => {
-    
+
     if (newMessage.value.trim() === "") {
         errorMessage.value = "Le message ne peut pas être vide";
         return;
@@ -505,11 +533,14 @@ const userPrivateMessagesRedirect = (user) => {
     router.push(`/friends/${user.uuid}`);
 };
 
-onMounted(() => {
-    fetchGuild();
-    fetchUsersInGuild();
-    fetchChannelsInGuild();
-});
+onMounted(async () => {
+    await fetchGuild()
+    await fetchUsersInGuild()
+    await fetchChannelsInGuild()
+    await fetchUserPermissions()
+    buildContextMenuActions()
+})
+
 
 // arrete le pooling quand on change de page
 onUnmounted(() => {
@@ -620,6 +651,11 @@ onUnmounted(() => {
                     class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg">
                     Modifier les rôles
                 </button>
+                <button v-if="owner"
+                    class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg"
+                    @click="banListRedirect(guildId)">
+                    Utilisateurs bannis
+                </button>
                 <ul>
                     <li v-for="user in users_in_guild" :key="user.uuid"
                         class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700 cursor-pointer"
@@ -632,17 +668,11 @@ onUnmounted(() => {
                         </div>
 
                         <!-- Menu contextuel pour admin -->
-                        <MenuView v-if="showMenuUser && owner" :actions="contextMenuActionsUser"
-                            @action-clicked="handleMenuActionsUser" :x="menuX" :y="menuY" />
+                        <MenuView v-if="showMenuUser && (can('kick_members') || can('ban_members'))"
+                            :actions="contextMenuActionsUser" @action-clicked="handleMenuActionsUser" :x="menuX"
+                            :y="menuY" />
                     </li>
-
                 </ul>
-
-                <button v-if="owner"
-                    class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg"
-                    @click="banListRedirect(guildId)">
-                    Utilisateurs bannis
-                </button>
             </div>
         </div>
     </div>
