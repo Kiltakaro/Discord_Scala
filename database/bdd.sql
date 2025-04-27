@@ -1,6 +1,6 @@
--- DROP DATABASE IF EXISTS scala_discord;
--- CREATE DATABASE scala_discord;
--- USE scala_discord;
+DROP DATABASE IF EXISTS scala_discord;
+CREATE DATABASE scala_discord;
+USE scala_discord;
 -- si on fait ça faudra changer le DATABASE.scala pour remplacer default par scala_discord
 
 CREATE TABLE IF NOT EXISTS User (
@@ -60,15 +60,6 @@ CREATE TABLE IF NOT EXISTS User_Guild (
 ) ENGINE = MergeTree
 ORDER BY user_id;
 
--- CREATE TABLE IF NOT EXISTS Guild_Invites (
---     invite_code String,
---     guild_id UUID,
---     creator_id UUID,
---     max_uses UInt8, -- 0 = Usage illimité
---     uses UInt8 DEFAULT 0, -- Compteur d'utilisation
---     expires_at DateTime DEFAULT (now() + INTERVAL 1 HOUR)
--- ) ENGINE = MergeTree
--- ORDER BY invite_code;
 
 CREATE TABLE IF NOT EXISTS Guild_Ban (
     user_id UUID,
@@ -76,24 +67,24 @@ CREATE TABLE IF NOT EXISTS Guild_Ban (
 ) ENGINE = MergeTree
 ORDER BY user_id;
 
-CREATE TABLE IF NOT EXISTS User_DM_Channel (
-    user_id UUID,
-    dm_channel_id UUID
-) ENGINE MergeTree
-ORDER BY user_id;
-
--- Pour le moment on a pas besoin de ces deux dernières tables
--- Je les laisse au cas où on décide de gérer les rôles au final
--- ouais on garde pour le moment et jpense qu'on mettra des id normaux plutot que des uuid
 CREATE TABLE IF NOT EXISTS Role (
     role_id UUID DEFAULT generateUUIDv4(),
     guild_id UUID,
-    role_name String
+    role_name String,
+    priority UInt8,
+    creation_date DateTime DEFAULT now()
 ) ENGINE = MergeTree
 ORDER BY role_id;
 
 CREATE TABLE IF NOT EXISTS User_Role (
     user_id UUID,
+    guild_id UUID,
     role_id UUID
-) ENGINE MergeTree
-ORDER BY user_id;
+) ENGINE = MergeTree
+ORDER BY (user_id, role_id);
+
+CREATE TABLE IF NOT EXISTS Role_Permission (
+    role_id UUID,
+    permission_name String
+) ENGINE = MergeTree
+ORDER BY (role_id, permission_name);

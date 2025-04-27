@@ -12,6 +12,8 @@ import CreateGuildView from '../views/CreateGuildView.vue'
 import BanListView from "@/views/BanListView.vue";
 import CreateChannelView from "@/views/CreateChannelView.vue";
 import FriendMessageView from "@/views/FriendMessageView.vue";
+import ManageRolesView from '@/views/ManageRolesView.vue'
+import ManageGuildRolesView from '@/views/ManageGuildRoles.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -59,11 +61,11 @@ const router = createRouter({
       name: 'server_bans',
       component: BanListView
     },
-      {
-          path: '/server/:id/create-channel',
-          name: 'create_channel',
-          component: CreateChannelView
-      },
+    {
+      path: '/server/:id/create-channel',
+      name: 'create_channel',
+      component: CreateChannelView
+    },
     {
       path: '/profile',
       name: 'profile',
@@ -88,6 +90,16 @@ const router = createRouter({
       path: '/friends/:id',
       name: 'dmchannel',
       component: FriendMessageView
+    },
+    {
+      path: '/server/:guildId/manage-roles/:userId',
+      name: 'manageroles',
+      component: ManageRolesView,
+    },
+    {
+      path: '/server/:guildId/manage-roles',
+      name: 'manageguildroles',
+      component: ManageGuildRolesView,
     },
   ],
 })

@@ -61,6 +61,7 @@ object Main extends IOApp {
                         "/auth" -> Authentification.authentificationRoutes(xa),
                         "/friends" -> Friend.friendRoutes(xa),
                         "/messages" -> Message.messageRoutes(xa),
+                        "/roles" -> Role.roleRoutes(xa),
                     ).orNotFound,
                     corsConfig
                 )

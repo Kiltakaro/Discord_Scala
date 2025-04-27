@@ -18,7 +18,7 @@ object Database {
 
     // https://rockthejvm.com/articles/learning-doobie-for-the-greater-good
 
-    private val clickhouseUrl = "jdbc:clickhouse://localhost:8123/default"
+    private val clickhouseUrl = "jdbc:clickhouse://localhost:8123/scala_discord"
 
     val clickhouseTransactor: Resource[IO, HikariTransactor[IO]] = for {
         ce <- ExecutionContexts.fixedThreadPool[IO](32)

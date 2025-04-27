@@ -19,7 +19,7 @@ const actualChannel = ref(null); // channel actuel
 
 const selectedUser = ref(null); //Pour la fiche profile
 const showUserProfile = ref(false);
-
+const userRoles = ref([])
 
 const channels_in_guild = ref([]);
 // pour les invitations
@@ -29,6 +29,7 @@ let refreshInterval = ref(null); // Pour le chargement des messages
 
 // Context menu variables
 // ON SE SERT DE ÇA LE + POSSIBLE SI ON PEUT, ÇA ÉVITE DE SPAM LES BOUTONS PARTOUT
+const userPermissions = ref([])
 const showMenuChannel = ref(false);
 const showMenuUser = ref(false);
 const targetChannelId = ref(""); // Utilisé pour déterminer sur quel channel on a fait clic droit
@@ -38,14 +39,59 @@ const menuY = ref(0);
 const contextMenuActionsChannel = ref([
     { label: 'Supprimer', action: 'delete' }
 ]);
+const contextMenuActionsUser = ref([])
 
-const contextMenuActionsUser = ref([
-    { label: 'Expulser', action: 'kick' },
-    { label: 'Bannir', action: 'ban' }
-]);
 
 if (!token) {
     router.push("/login");
+}
+
+function manageRolesRedirect(user) {
+    if (!user) return;
+    router.push(`/server/${guildId.value}/manage-roles/${user.uuid}`);
+}
+
+const fetchWithAuth = async (url, options = {}) => {
+    const token = localStorage.getItem('token')
+    return fetch(`http://localhost:8080${url}`, {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            ...(options.headers || {})
+        }
+    })
+}
+
+// Helper pour éviter de saturer la template
+const can = (permission) => {
+    return owner.value || userPermissions.value.includes(permission)
+}
+
+const fetchUserPermissions = async () => {
+    try {
+        const res = await fetchWithAuth(`/roles/permissions/${guildId.value}`)
+        if (res.ok) {
+            userPermissions.value = await res.json()
+        } else {
+            userPermissions.value = []
+        }
+    } catch (err) {
+        console.error('Failed to fetch user permissions:', err)
+        userPermissions.value = []
+    }
+}
+
+// Gère dynamiquement quelles options du menu à afficher
+const buildContextMenuActions = () => {
+    const actions = []
+    if (can('kick_members')) {
+        actions.push({ label: 'Kick', action: 'kick' })
+    }
+    if (can('ban_members')) {
+        actions.push({ label: 'Ban', action: 'ban' })
+    }
+    contextMenuActionsUser.value = actions
 }
 
 const searchUsers = async () => {
@@ -244,6 +290,20 @@ const getChannelMessages = async (channelId) => {
     }
 }
 
+const fetchUserRoles = async (userId) => {
+    try {
+        const res = await fetchWithAuth(`/roles/assigned/${userId}/${guildId.value}`)
+        if (res.ok) {
+            userRoles.value = await res.json()
+        } else {
+            userRoles.value = []
+        }
+    } catch (err) {
+        console.error('Failed to fetch user roles:', err)
+        userRoles.value = []
+    }
+}
+
 const banUser = async (banned_id) => {
 
     if (!banned_id) {
@@ -360,7 +420,7 @@ const formatDate = (dateString) => {
 };
 
 const sendMessage = async () => {
-    
+
     if (newMessage.value.trim() === "") {
         errorMessage.value = "Le message ne peut pas être vide";
         return;
@@ -459,21 +519,28 @@ const createChannelRedirect = async () => {
     await router.push(`/server/${guildId.value}/create-channel`);
 };
 
-const openUserProfile = (user) => {
+const redirectManageGuildRoles = async () => {
+    await router.push(`/server/${guildId.value}/manage-roles`);
+}
 
+const openUserProfile = (user) => {
     selectedUser.value = user;
     showUserProfile.value = true;
+    fetchUserRoles(user.uuid)
 };
 
 const userPrivateMessagesRedirect = (user) => {
     router.push(`/friends/${user.uuid}`);
 };
 
-onMounted(() => {
-    fetchGuild();
-    fetchUsersInGuild();
-    fetchChannelsInGuild();
-});
+onMounted(async () => {
+    await fetchGuild()
+    await fetchUsersInGuild()
+    await fetchChannelsInGuild()
+    await fetchUserPermissions()
+    buildContextMenuActions()
+})
+
 
 // arrete le pooling quand on change de page
 onUnmounted(() => {
@@ -580,6 +647,15 @@ onUnmounted(() => {
                     class="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg">
                     Supprimer le serveur
                 </button>
+                <button v-if="owner" @click="redirectManageGuildRoles"
+                    class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg">
+                    Modifier les rôles
+                </button>
+                <button v-if="owner"
+                    class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg"
+                    @click="banListRedirect(guildId)">
+                    Utilisateurs bannis
+                </button>
                 <ul>
                     <li v-for="user in users_in_guild" :key="user.uuid"
                         class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700 cursor-pointer"
@@ -592,17 +668,11 @@ onUnmounted(() => {
                         </div>
 
                         <!-- Menu contextuel pour admin -->
-                        <MenuView v-if="showMenuUser && owner" :actions="contextMenuActionsUser"
-                            @action-clicked="handleMenuActionsUser" :x="menuX" :y="menuY" />
+                        <MenuView v-if="showMenuUser && (can('kick_members') || can('ban_members'))"
+                            :actions="contextMenuActionsUser" @action-clicked="handleMenuActionsUser" :x="menuX"
+                            :y="menuY" />
                     </li>
-
                 </ul>
-
-                <button v-if="owner"
-                    class="ml-auto px-4 py-1 bg-purple-500 hover:bg-blue-600 text-white font-semibold rounded-lg"
-                    @click="banListRedirect(guildId)">
-                    Utilisateurs bannis
-                </button>
             </div>
         </div>
     </div>
@@ -623,15 +693,21 @@ onUnmounted(() => {
 
             <!-- Rôles placeholder à récup si on fait des roles -->
             <div class="flex flex-wrap justify-center gap-2 mb-4">
-                <span class="px-2 py-1 bg-yellow-600 rounded-full text-xs">Admin</span>
-                <span class="px-2 py-1 bg-red-600 rounded-full text-xs">Scalistes</span>
-                <span class="px-2 py-1 bg-blue-600 rounded-full text-xs">KC BLUE BLUE</span>
+                <span v-for="role in userRoles" :key="role[0]" class="px-2 py-1 bg-purple-600 rounded-full text-xs">
+                    {{ role[1] }}
+                </span>
             </div>
 
             <!-- Bouton MP -->
             <button class="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
                 @click="userPrivateMessagesRedirect(selectedUser)">
                 Envoyer un message privé
+            </button>
+
+            <!-- Nouveau bouton pour gérer les rôles -->
+            <button class="w-full py-2 mt-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold"
+                @click="manageRolesRedirect(selectedUser)">
+                Gérer les rôles
             </button>
         </div>
     </div>
