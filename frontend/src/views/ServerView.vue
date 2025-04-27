@@ -348,9 +348,20 @@ const deleteGuild = async () => {
     }
 };
 
+const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
+
 const sendMessage = async () => {
-    // A FIX CECI ACCEPTE MEME LES MSG VIDE VISIBLEMENT
-    if (newMessage === "") {
+    
+    if (newMessage.value.trim() === "") {
         errorMessage.value = "Le message ne peut pas être vide";
         return;
     }
@@ -519,8 +530,8 @@ onUnmounted(() => {
                             :class="{ 'justify-end': message.sender_id === user_id }">
                             <div class="text-sm font-bold text-purple-400">{{ message.username }}</div>
                             <div class="text-sm text-blue-300">{{ message.content }}</div>
-                            <!-- A FIX Faut mettre un format de date + stylé -->
-                            <div class="text-xs text-gray-300 ml-auto">{{ message.sent_at }}</div>
+                            <div class="text-xs text-gray-300 ml-auto">{{ formatDate(message.sent_at) }}</div>
+
                         </div>
                     </li>
                 </ul>
